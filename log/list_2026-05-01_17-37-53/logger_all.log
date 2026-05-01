@@ -1,0 +1,106 @@
+[0.354s] DEBUG:colcon:Command line arguments: ['/usr/bin/colcon', 'list', '--base-paths', '/home/xuan/ugv_ws/src']
+[0.354s] DEBUG:colcon:Parsed command line arguments: Namespace(log_base=None, log_level=None, verb_name='list', build_base='build', ignore_user_meta=False, metas=['./colcon.meta'], base_paths=['/home/xuan/ugv_ws/src'], packages_ignore=None, packages_ignore_regex=None, paths=None, packages_up_to=None, packages_up_to_regex=None, packages_above=None, packages_above_and_dependencies=None, packages_above_depth=None, packages_select_by_dep=None, packages_skip_by_dep=None, packages_skip_up_to=None, packages_select_build_failed=False, packages_skip_build_finished=False, packages_select_test_failures=False, packages_skip_test_passed=False, packages_select=None, packages_skip=None, packages_select_regex=None, packages_skip_regex=None, packages_start=None, packages_end=None, allow_overriding=[], topological_order=False, names_only=False, paths_only=False, topological_graph=False, topological_graph_dot=False, topological_graph_density=False, topological_graph_legend=False, topological_graph_dot_cluster=False, topological_graph_dot_include_skipped=False, mixin_files=None, mixin=None, verb_parser=<colcon_mixin.mixin.mixin_argument.MixinArgumentDecorator object at 0x7971fc31e9e0>, verb_extension=<colcon_package_information.verb.list.ListVerb object at 0x7971fc31d480>, main=<bound method ListVerb.main of <colcon_package_information.verb.list.ListVerb object at 0x7971fc31d480>>, mixin_verb=('list',))
+[1.032s] Level 1:colcon.colcon_core.package_discovery:discover_packages(colcon_meta) check parameters
+[1.032s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) check parameters
+[1.032s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) check parameters
+[1.032s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) check parameters
+[1.032s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) discover
+[1.033s] INFO:colcon.colcon_core.package_discovery:Crawling recursively for packages in '/home/xuan/ugv_ws/src'
+[1.033s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src) by extensions ['ignore', 'ignore_ament_install']
+[1.033s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src) by extension 'ignore'
+[1.033s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src) by extension 'ignore_ament_install'
+[1.033s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src) by extensions ['colcon_pkg']
+[1.033s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src) by extension 'colcon_pkg'
+[1.033s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src) by extensions ['colcon_meta']
+[1.033s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src) by extension 'colcon_meta'
+[1.033s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src) by extensions ['ros']
+[1.033s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src) by extension 'ros'
+[1.045s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src) by extensions ['cmake', 'python']
+[1.045s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src) by extension 'cmake'
+[1.045s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src) by extension 'python'
+[1.045s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src) by extensions ['python_setup_py']
+[1.045s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src) by extension 'python_setup_py'
+[1.045s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_bringup) by extensions ['ignore', 'ignore_ament_install']
+[1.045s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_bringup) by extension 'ignore'
+[1.045s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_bringup) by extension 'ignore_ament_install'
+[1.045s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_bringup) by extensions ['colcon_pkg']
+[1.045s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_bringup) by extension 'colcon_pkg'
+[1.045s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_bringup) by extensions ['colcon_meta']
+[1.045s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_bringup) by extension 'colcon_meta'
+[1.046s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_bringup) by extensions ['ros']
+[1.046s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_bringup) by extension 'ros'
+[1.052s] DEBUG:colcon.colcon_core.package_identification:Package '/home/xuan/ugv_ws/src/adaptive_fusion_bringup' with type 'ros.ament_cmake' and name 'adaptive_fusion_bringup'
+[1.052s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_description) by extensions ['ignore', 'ignore_ament_install']
+[1.052s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_description) by extension 'ignore'
+[1.052s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_description) by extension 'ignore_ament_install'
+[1.052s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_description) by extensions ['colcon_pkg']
+[1.052s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_description) by extension 'colcon_pkg'
+[1.052s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_description) by extensions ['colcon_meta']
+[1.052s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_description) by extension 'colcon_meta'
+[1.052s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_description) by extensions ['ros']
+[1.052s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_description) by extension 'ros'
+[1.053s] DEBUG:colcon.colcon_core.package_identification:Package '/home/xuan/ugv_ws/src/adaptive_fusion_description' with type 'ros.ament_cmake' and name 'adaptive_fusion_description'
+[1.054s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_ekf) by extensions ['ignore', 'ignore_ament_install']
+[1.054s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_ekf) by extension 'ignore'
+[1.054s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_ekf) by extension 'ignore_ament_install'
+[1.054s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_ekf) by extensions ['colcon_pkg']
+[1.054s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_ekf) by extension 'colcon_pkg'
+[1.054s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_ekf) by extensions ['colcon_meta']
+[1.054s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_ekf) by extension 'colcon_meta'
+[1.054s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_ekf) by extensions ['ros']
+[1.054s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_ekf) by extension 'ros'
+[1.055s] DEBUG:colcon.colcon_core.package_identification:Package '/home/xuan/ugv_ws/src/adaptive_fusion_ekf' with type 'ros.ament_python' and name 'adaptive_fusion_ekf'
+[1.056s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_eval) by extensions ['ignore', 'ignore_ament_install']
+[1.056s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_eval) by extension 'ignore'
+[1.056s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_eval) by extension 'ignore_ament_install'
+[1.056s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_eval) by extensions ['colcon_pkg']
+[1.056s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_eval) by extension 'colcon_pkg'
+[1.056s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_eval) by extensions ['colcon_meta']
+[1.056s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_eval) by extension 'colcon_meta'
+[1.056s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_eval) by extensions ['ros']
+[1.056s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_eval) by extension 'ros'
+[1.057s] DEBUG:colcon.colcon_core.package_identification:Package '/home/xuan/ugv_ws/src/adaptive_fusion_eval' with type 'ros.ament_python' and name 'adaptive_fusion_eval'
+[1.057s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_gazebo) by extensions ['ignore', 'ignore_ament_install']
+[1.057s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_gazebo) by extension 'ignore'
+[1.057s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_gazebo) by extension 'ignore_ament_install'
+[1.057s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_gazebo) by extensions ['colcon_pkg']
+[1.057s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_gazebo) by extension 'colcon_pkg'
+[1.057s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_gazebo) by extensions ['colcon_meta']
+[1.057s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_gazebo) by extension 'colcon_meta'
+[1.057s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_gazebo) by extensions ['ros']
+[1.057s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_gazebo) by extension 'ros'
+[1.058s] DEBUG:colcon.colcon_core.package_identification:Package '/home/xuan/ugv_ws/src/adaptive_fusion_gazebo' with type 'ros.ament_cmake' and name 'adaptive_fusion_gazebo'
+[1.058s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_msgs) by extensions ['ignore', 'ignore_ament_install']
+[1.058s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_msgs) by extension 'ignore'
+[1.058s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_msgs) by extension 'ignore_ament_install'
+[1.058s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_msgs) by extensions ['colcon_pkg']
+[1.058s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_msgs) by extension 'colcon_pkg'
+[1.058s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_msgs) by extensions ['colcon_meta']
+[1.058s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_msgs) by extension 'colcon_meta'
+[1.058s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_msgs) by extensions ['ros']
+[1.058s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_msgs) by extension 'ros'
+[1.059s] DEBUG:colcon.colcon_core.package_identification:Package '/home/xuan/ugv_ws/src/adaptive_fusion_msgs' with type 'ros.ament_cmake' and name 'adaptive_fusion_msgs'
+[1.059s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_slam_adapter) by extensions ['ignore', 'ignore_ament_install']
+[1.059s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_slam_adapter) by extension 'ignore'
+[1.059s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_slam_adapter) by extension 'ignore_ament_install'
+[1.059s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_slam_adapter) by extensions ['colcon_pkg']
+[1.059s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_slam_adapter) by extension 'colcon_pkg'
+[1.059s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_slam_adapter) by extensions ['colcon_meta']
+[1.059s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_slam_adapter) by extension 'colcon_meta'
+[1.059s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_slam_adapter) by extensions ['ros']
+[1.059s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_slam_adapter) by extension 'ros'
+[1.060s] DEBUG:colcon.colcon_core.package_identification:Package '/home/xuan/ugv_ws/src/adaptive_fusion_slam_adapter' with type 'ros.ament_python' and name 'adaptive_fusion_slam_adapter'
+[1.060s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_uwb) by extensions ['ignore', 'ignore_ament_install']
+[1.060s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_uwb) by extension 'ignore'
+[1.060s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_uwb) by extension 'ignore_ament_install'
+[1.060s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_uwb) by extensions ['colcon_pkg']
+[1.060s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_uwb) by extension 'colcon_pkg'
+[1.060s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_uwb) by extensions ['colcon_meta']
+[1.060s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_uwb) by extension 'colcon_meta'
+[1.060s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_uwb) by extensions ['ros']
+[1.061s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/adaptive_fusion_uwb) by extension 'ros'
+[1.061s] DEBUG:colcon.colcon_core.package_identification:Package '/home/xuan/ugv_ws/src/adaptive_fusion_uwb' with type 'ros.ament_python' and name 'adaptive_fusion_uwb'
+[1.061s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/log) by extensions ['ignore', 'ignore_ament_install']
+[1.061s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/log) by extension 'ignore'
+[1.061s] Level 1:colcon.colcon_core.package_identification:_identify(/home/xuan/ugv_ws/src/log) ignored
+[1.061s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) using defaults
