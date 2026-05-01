@@ -1,4 +1,5 @@
 import os
+import yaml
 
 from ament_index_python.packages import get_package_share_directory
 
@@ -10,9 +11,36 @@ from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch_ros.actions import Node
 
 
+def load_uwb_poses(config_path):
+    with open(config_path, "r", encoding="utf-8") as file:
+        config = yaml.safe_load(file) or {}
+
+    return config.get("uwb_anchors", {})
+
+
+def create_uwb_spawner(entity_name, uwb_sdf, namespace, pose):
+    return Node(
+        package='gazebo_ros',
+        executable='spawn_entity.py',
+        output='screen',
+        arguments=[
+            '-entity', entity_name,
+            '-file', uwb_sdf,
+            '-robot_namespace', namespace,
+            '-x', str(pose.get('x', 0.0)),
+            '-y', str(pose.get('y', 0.0)),
+            '-z', str(pose.get('z', 0.01)),
+            '-R', str(pose.get('roll', 0.0)),
+            '-P', str(pose.get('pitch', 0.0)),
+            '-Y', str(pose.get('yaw', 0.0)),
+        ])
+
+
 def generate_launch_description():
     pkg_share = get_package_share_directory("adaptive_fusion_gazebo")
     turtlebot3_gazebo_share = get_package_share_directory("turtlebot3_gazebo")
+    uwb_pose_config = os.path.join(pkg_share, 'config', 'uwb_pose.yaml')
+    uwb_poses = load_uwb_poses(uwb_pose_config)
 
     namespace = LaunchConfiguration('namespace')
     world = LaunchConfiguration('world')
@@ -24,6 +52,7 @@ def generate_launch_description():
             'Y': LaunchConfiguration('yaw', default='0.00')}
     robot_name = LaunchConfiguration('robot_name')
     robot_sdf = LaunchConfiguration('robot_sdf')
+    uwb_sdf = LaunchConfiguration('uwb_sdf')
 
     EnvTurtleBot = SetEnvironmentVariable(
             name="TURTLEBOT3_MODEL",
@@ -64,6 +93,11 @@ def generate_launch_description():
         default_value=os.path.join(pkg_share, 'models', 'turtlebot3_waffle', 'model.sdf'),
         description='Full path to robot sdf file to spawn the robot in gazebo')
 
+    declare_uwb_sdf_cmd = DeclareLaunchArgument(
+        'uwb_sdf',
+        default_value=os.path.join(pkg_share, 'models', 'UWB_Base', 'model.sdf'),
+        description='Full path to UWB sdf file to spawn in gazebo')
+
     start_gazebo_server_cmd = ExecuteProcess(
         cmd=['gzserver', '-s', 'libgazebo_ros_init.so',
              '-s', 'libgazebo_ros_factory.so', world],
@@ -84,6 +118,11 @@ def generate_launch_description():
             '-x', pose['x'], '-y', pose['y'], '-z', pose['z'],
             '-R', pose['R'], '-P', pose['P'], '-Y', pose['Y']])
 
+    uwb_spawners = [
+        create_uwb_spawner(entity_name, uwb_sdf, namespace, anchor_pose)
+        for entity_name, anchor_pose in uwb_poses.items()
+    ]
+
     ld = LaunchDescription()
 
     # Add any set environment variables
@@ -95,10 +134,12 @@ def generate_launch_description():
     ld.add_action(declare_world_cmd)
     ld.add_action(declare_robot_name_cmd)
     ld.add_action(declare_robot_sdf_cmd)
-
+    ld.add_action(declare_uwb_sdf_cmd)
     # Add any conditioned actions
     ld.add_action(start_gazebo_server_cmd)
     ld.add_action(start_gazebo_client_cmd)
     ld.add_action(start_gazebo_spawner_cmd)
+    for uwb_spawner in uwb_spawners:
+        ld.add_action(uwb_spawner)
 
     return ld

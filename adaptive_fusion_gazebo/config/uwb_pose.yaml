@@ -1,0 +1,29 @@
+uwb_anchors:
+  uwb_base1:
+    x: 4.0
+    y: 4.0
+    z: 0.01
+    roll: 0.0
+    pitch: 0.0
+    yaw: 0.0
+  uwb_base2:
+    x: 4.0
+    y: -4.0
+    z: 0.01
+    roll: 0.0
+    pitch: 0.0
+    yaw: 0.0
+  uwb_base3:
+    x: -4.0
+    y: 4.0
+    z: 0.01
+    roll: 0.0
+    pitch: 0.0
+    yaw: 0.0
+  uwb_base4:
+    x: -4.0
+    y: -4.0
+    z: 0.01
+    roll: 0.0
+    pitch: 0.0
+    yaw: 0.0
