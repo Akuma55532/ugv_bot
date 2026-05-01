@@ -532,5 +532,17 @@
       <joint_name>wheel_right_joint</joint_name>
     </plugin>    
 
+    <plugin name="turtlebot3_ground_truth" filename="libgazebo_ros_p3d.so">
+      <ros>
+        <remapping>odom:=ground_truth/odom</remapping>
+      </ros>
+      <body_name>base_link</body_name>
+      <frame_name>world</frame_name>
+      <update_rate>30</update_rate>
+      <xyz_offset>0 0 0</xyz_offset>
+      <rpy_offset>0 0 0</rpy_offset>
+      <gaussian_noise>0.0</gaussian_noise>
+    </plugin>
+
   </model>
 </sdf>
