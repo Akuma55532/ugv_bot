@@ -10,6 +10,8 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        ('share/' + package_name + '/launch', ['launch/carto_slam.launch.py']),
+        ('share/' + package_name + '/config', ['config/turtlebot3_carto_config.lua']),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -24,6 +26,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
+            'slam_pose_adapter_node = adaptive_fusion_slam_adapter.slam_pose_adapter_node:main',
         ],
     },
 )

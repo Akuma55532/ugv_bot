@@ -42,10 +42,16 @@ def generate_launch_description():
     uwb_pose_config = os.path.join(pkg_share, 'config', 'uwb_pose.yaml')
     uwb_poses = load_uwb_poses(uwb_pose_config)
 
+    description_pkg_share = get_package_share_directory("adaptive_fusion_description")
+    robot_description_path = os.path.join(description_pkg_share, 'urdf', 'turtlebot3_waffle.urdf')
+    with open(robot_description_path, 'r') as file:
+        robot_description = file.read()
+
     namespace = LaunchConfiguration('namespace')
     world = LaunchConfiguration('world')
-    pose = {'x': LaunchConfiguration('x_pose', default='0.00'),
-            'y': LaunchConfiguration('y_pose', default='0.00'),
+    use_sim_time = LaunchConfiguration('use_sim_time')
+    pose = {'x': LaunchConfiguration('x_pose', default='-2.00'),
+            'y': LaunchConfiguration('y_pose', default='-0.50'),
             'z': LaunchConfiguration('z_pose', default='0.01'),
             'R': LaunchConfiguration('roll', default='0.00'),
             'P': LaunchConfiguration('pitch', default='0.00'),
@@ -80,7 +86,7 @@ def generate_launch_description():
         #              https://github.com/ROBOTIS-GIT/turtlebot3_simulations/issues/91
         # default_value=os.path.join(get_package_share_directory('turtlebot3_gazebo'),
         # worlds/turtlebot3_worlds/waffle.model')
-        default_value=os.path.join(pkg_share, 'worlds', 'empty_world.world'),
+        default_value=os.path.join(pkg_share, 'worlds', 'turtlebot3_world.world'),
         description='Full path to world model file to load')
 
     declare_robot_name_cmd = DeclareLaunchArgument(
@@ -97,6 +103,11 @@ def generate_launch_description():
         'uwb_sdf',
         default_value=os.path.join(pkg_share, 'models', 'UWB_Base', 'model.sdf'),
         description='Full path to UWB sdf file to spawn in gazebo')
+    
+    declare_use_sim_time_cmd = DeclareLaunchArgument(
+        'use_sim_time',
+        default_value='true',
+        description='Use simulation (Gazebo) clock if true')
 
     start_gazebo_server_cmd = ExecuteProcess(
         cmd=['gzserver', '-s', 'libgazebo_ros_init.so',
@@ -123,6 +134,16 @@ def generate_launch_description():
         for entity_name, anchor_pose in uwb_poses.items()
     ]
 
+    start_robot_state_publisher_cmd = Node(
+        package='robot_state_publisher',
+        executable='robot_state_publisher',
+        name='robot_state_publisher',
+        namespace=namespace,
+        output='screen',
+        parameters=[{'use_sim_time': use_sim_time,
+                     'robot_description': robot_description}],
+        )
+
     ld = LaunchDescription()
 
     # Add any set environment variables
@@ -135,10 +156,12 @@ def generate_launch_description():
     ld.add_action(declare_robot_name_cmd)
     ld.add_action(declare_robot_sdf_cmd)
     ld.add_action(declare_uwb_sdf_cmd)
+    ld.add_action(declare_use_sim_time_cmd)
     # Add any conditioned actions
     ld.add_action(start_gazebo_server_cmd)
     ld.add_action(start_gazebo_client_cmd)
     ld.add_action(start_gazebo_spawner_cmd)
+    ld.add_action(start_robot_state_publisher_cmd)
     for uwb_spawner in uwb_spawners:
         ld.add_action(uwb_spawner)
 

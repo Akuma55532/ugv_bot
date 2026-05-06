@@ -7,8 +7,6 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
-find_package(launch REQUIRED)
-find_package(launch_ros REQUIRED)
 find_package(rviz2 REQUIRED)
 
 if(BUILD_TESTING)

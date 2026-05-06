@@ -24,6 +24,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
+            'uwb_range_node = adaptive_fusion_uwb.uwb_range_node:main',
         ],
     },
 )

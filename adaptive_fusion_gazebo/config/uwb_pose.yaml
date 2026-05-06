@@ -1,29 +1,44 @@
 uwb_anchors:
   uwb_base1:
-    x: 4.0
-    y: 4.0
+    x: 10.0
+    y: 10.0
     z: 0.01
     roll: 0.0
     pitch: 0.0
     yaw: 0.0
   uwb_base2:
-    x: 4.0
-    y: -4.0
+    x: 10.0
+    y: -10.0
     z: 0.01
     roll: 0.0
     pitch: 0.0
     yaw: 0.0
   uwb_base3:
-    x: -4.0
-    y: 4.0
+    x: -10.0
+    y: 10.0
     z: 0.01
     roll: 0.0
     pitch: 0.0
     yaw: 0.0
   uwb_base4:
-    x: -4.0
-    y: -4.0
+    x: -10.0
+    y: -10.0
     z: 0.01
     roll: 0.0
     pitch: 0.0
     yaw: 0.0
+
+disturbance_zones:
+  - name: nlos_demo_zone
+    enabled: false
+    min_x: 0.5
+    max_x: 2.0
+    min_y: -1.0
+    max_y: 1.0
+    affected_anchors:
+      - uwb_base1
+      - uwb_base2
+    extra_noise_stddev: 0.15
+    bias_mean: 0.30
+    bias_stddev: 0.05
+    dropout_prob: 0.10
