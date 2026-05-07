@@ -14,10 +14,7 @@ class UwbRangeNode(Node):
     def __init__(self) -> None:
         super().__init__("uwb_range_node")
 
-        default_pose_file = (
-            get_package_share_directory("adaptive_fusion_gazebo")
-            + "/config/uwb_pose.yaml"
-        )
+        default_pose_file = self._resolve_default_pose_file()
 
         self.declare_parameter("ground_truth_topic", "/ground_truth/odom")
         self.declare_parameter("uwb_pose_file", default_pose_file)
@@ -39,6 +36,12 @@ class UwbRangeNode(Node):
         self.uwb_pose_file = (
             self.get_parameter("uwb_pose_file").get_parameter_value().string_value
         )
+        if not self.uwb_pose_file:
+            raise RuntimeError(
+                "Parameter 'uwb_pose_file' is empty. "
+                "Please provide a valid UWB anchor configuration YAML path."
+            )
+
         self.noise_stddev = (
             self.get_parameter("noise_stddev").get_parameter_value().double_value
         )
@@ -111,12 +114,22 @@ class UwbRangeNode(Node):
         self.get_logger().info(
             "UWB range node started. "
             f"ground_truth_topic={self.ground_truth_topic}, "
+            f"uwb_pose_file={self.uwb_pose_file}, "
             f"noise_stddev={self.noise_stddev:.3f} m, "
             f"use_3d_distance={self.use_3d_distance}, "
             f"publish_pose={self.publish_pose}, "
             f"zone_disturbances={len(self.zone_disturbances)}, "
             f"anchors={self.anchor_names}"
         )
+
+    def _resolve_default_pose_file(self) -> str:
+        try:
+            return (
+                get_package_share_directory("adaptive_fusion_gazebo")
+                + "/config/uwb_pose.yaml"
+            )
+        except Exception:
+            return ""
 
     def _load_config(self, config_file: str) -> Dict[str, Any]:
         with open(config_file, "r", encoding="utf-8") as file:

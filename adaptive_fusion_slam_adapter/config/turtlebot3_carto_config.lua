@@ -6,9 +6,13 @@ options = {
   trajectory_builder = TRAJECTORY_BUILDER,
   map_frame = "map",
   tracking_frame = "base_link",
-  -- 发布机器人基座在 map 坐标系下的位姿，便于后续直接适配成 /slam/pose
+  -- published_frame 与 odom_frame 保留为 odom，便于 Cartographer 内部结合轮速里程计
   published_frame = "odom",
   odom_frame = "odom",
+  -- 由 EKF 独占发布 map -> odom，避免与 Cartographer/Nav2 产生 TF 冲突
+  publish_to_tf = false,
+  -- 直接输出 tracked_pose，供 slam_pose_adapter 转成 /slam/pose
+  publish_tracked_pose = true,
   -- 由底盘里程计提供 odom -> base_footprint，Cartographer 不再重复生成
   provide_odom_frame = false,
   -- 仅发布 2D 位姿，适配当前室内平面移动机器人场景

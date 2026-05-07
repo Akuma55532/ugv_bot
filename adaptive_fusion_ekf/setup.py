@@ -10,13 +10,15 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        ('share/' + package_name + '/launch', ['launch/ekf.launch.py']),
+        ('share/' + package_name + '/config', ['config/ekf_params.yaml']),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='xuan',
     maintainer_email='wx3515753265@gmail.com',
-    description='TODO: Package description',
-    license='TODO: License declaration',
+    description='Adaptive UWB and SLAM fusion EKF nodes for ROS 2',
+    license='Apache-2.0',
     extras_require={
         'test': [
             'pytest',
@@ -24,6 +26,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
+            'ekf_fusion_node = adaptive_fusion_ekf.ekf_fusion_node:main',
         ],
     },
 )

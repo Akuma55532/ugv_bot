@@ -3,15 +3,22 @@
 <package format="3">
   <name>adaptive_fusion_bringup</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <description>Unified bringup launch files for adaptive fusion simulation and navigation</description>
   <maintainer email="wx3515753265@gmail.com">xuan</maintainer>
-  <license>TODO: License declaration</license>
+  <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
+  <depend>ament_index_python</depend>
   <depend>launch</depend>
   <depend>launch_ros</depend>
   <depend>rviz2</depend>
+  <depend>nav2_bringup</depend>
+  <depend>adaptive_fusion_gazebo</depend>
+  <depend>adaptive_fusion_slam_adapter</depend>
+  <depend>adaptive_fusion_uwb</depend>
+  <depend>adaptive_fusion_ekf</depend>
+  <depend>adaptive_fusion_navigation</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

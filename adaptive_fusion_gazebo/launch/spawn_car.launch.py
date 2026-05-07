@@ -4,10 +4,9 @@ import yaml
 from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, ExecuteProcess, IncludeLaunchDescription, SetEnvironmentVariable
+from launch.actions import DeclareLaunchArgument, ExecuteProcess, SetEnvironmentVariable
 from launch.conditions import IfCondition
-from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration, PythonExpression
+from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 
@@ -50,6 +49,12 @@ def generate_launch_description():
     namespace = LaunchConfiguration('namespace')
     world = LaunchConfiguration('world')
     use_sim_time = LaunchConfiguration('use_sim_time')
+    start_uwb = LaunchConfiguration('start_uwb')
+    uwb_pose_file = LaunchConfiguration('uwb_pose_file')
+    ground_truth_topic = LaunchConfiguration('ground_truth_topic')
+    uwb_noise_stddev = LaunchConfiguration('uwb_noise_stddev')
+    uwb_random_seed = LaunchConfiguration('uwb_random_seed')
+    uwb_publish_pose_topic = LaunchConfiguration('uwb_publish_pose_topic')
     pose = {'x': LaunchConfiguration('x_pose', default='-2.00'),
             'y': LaunchConfiguration('y_pose', default='-0.50'),
             'z': LaunchConfiguration('z_pose', default='0.01'),
@@ -109,6 +114,36 @@ def generate_launch_description():
         default_value='true',
         description='Use simulation (Gazebo) clock if true')
 
+    declare_start_uwb_cmd = DeclareLaunchArgument(
+        'start_uwb',
+        default_value='true',
+        description='Start the UWB simulation node together with Gazebo')
+
+    declare_uwb_pose_file_cmd = DeclareLaunchArgument(
+        'uwb_pose_file',
+        default_value=uwb_pose_config,
+        description='UWB anchor and disturbance configuration YAML file')
+
+    declare_ground_truth_topic_cmd = DeclareLaunchArgument(
+        'ground_truth_topic',
+        default_value='/ground_truth/odom',
+        description='Ground truth odometry topic consumed by the UWB simulator')
+
+    declare_uwb_noise_stddev_cmd = DeclareLaunchArgument(
+        'uwb_noise_stddev',
+        default_value='0.1',
+        description='Gaussian noise stddev in meters for simulated UWB ranges')
+
+    declare_uwb_random_seed_cmd = DeclareLaunchArgument(
+        'uwb_random_seed',
+        default_value='-1',
+        description='Random seed for the UWB simulator, -1 means random')
+
+    declare_uwb_publish_pose_topic_cmd = DeclareLaunchArgument(
+        'uwb_publish_pose_topic',
+        default_value='/uwb/pose',
+        description='Output topic for the simulated UWB position estimate')
+
     start_gazebo_server_cmd = ExecuteProcess(
         cmd=['gzserver', '-s', 'libgazebo_ros_init.so',
              '-s', 'libgazebo_ros_factory.so', world],
@@ -144,6 +179,26 @@ def generate_launch_description():
                      'robot_description': robot_description}],
         )
 
+    start_uwb_range_node_cmd = Node(
+        package='adaptive_fusion_uwb',
+        executable='uwb_range_node',
+        name='uwb_range_node',
+        output='screen',
+        condition=IfCondition(start_uwb),
+        parameters=[
+            {
+                'use_sim_time': use_sim_time,
+                'ground_truth_topic': ground_truth_topic,
+                'uwb_pose_file': uwb_pose_file,
+                'noise_stddev': uwb_noise_stddev,
+                'random_seed': uwb_random_seed,
+                'publish_pose': True,
+                'publish_pose_topic': uwb_publish_pose_topic,
+                'pose_frame': 'map',
+            }
+        ],
+    )
+
     ld = LaunchDescription()
 
     # Add any set environment variables
@@ -157,11 +212,18 @@ def generate_launch_description():
     ld.add_action(declare_robot_sdf_cmd)
     ld.add_action(declare_uwb_sdf_cmd)
     ld.add_action(declare_use_sim_time_cmd)
+    ld.add_action(declare_start_uwb_cmd)
+    ld.add_action(declare_uwb_pose_file_cmd)
+    ld.add_action(declare_ground_truth_topic_cmd)
+    ld.add_action(declare_uwb_noise_stddev_cmd)
+    ld.add_action(declare_uwb_random_seed_cmd)
+    ld.add_action(declare_uwb_publish_pose_topic_cmd)
     # Add any conditioned actions
     ld.add_action(start_gazebo_server_cmd)
     ld.add_action(start_gazebo_client_cmd)
     ld.add_action(start_gazebo_spawner_cmd)
     ld.add_action(start_robot_state_publisher_cmd)
+    ld.add_action(start_uwb_range_node_cmd)
     for uwb_spawner in uwb_spawners:
         ld.add_action(uwb_spawner)
 
