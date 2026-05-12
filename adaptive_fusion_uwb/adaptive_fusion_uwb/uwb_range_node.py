@@ -1,13 +1,27 @@
 import math
 import random
-from typing import Any, Dict, List, Optional, Tuple
+from collections import deque
+from typing import Any, Deque, Dict, List, Optional, Tuple
 
+import rclpy
 import yaml
 from ament_index_python.packages import get_package_share_directory
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
-import rclpy
+
+
+def mean(values: List[float]) -> float:
+    if not values:
+        return 0.0
+    return sum(values) / float(len(values))
+
+
+def variance(values: List[float]) -> float:
+    if len(values) < 2:
+        return 0.0
+    avg = mean(values)
+    return sum((value - avg) * (value - avg) for value in values) / float(len(values))
 
 
 class UwbRangeNode(Node):
@@ -29,6 +43,18 @@ class UwbRangeNode(Node):
         self.declare_parameter("position_covariance_xy", 0.01)
         self.declare_parameter("position_covariance_z", 9999.0)
         self.declare_parameter("orientation_covariance_rpy", 9999.0)
+        self.declare_parameter("adaptive_covariance", True)
+        self.declare_parameter("consistency_window_size", 10)
+        self.declare_parameter("consistency_min_score", 0.05)
+        self.declare_parameter("consistency_max_scale", 20.0)
+        self.declare_parameter("range_rmse_beta", 0.25)
+        self.declare_parameter("position_jump_beta", 0.35)
+        self.declare_parameter("position_window_beta", 0.20)
+        self.declare_parameter("range_rmse_weight", 0.35)
+        self.declare_parameter("continuity_weight", 0.25)
+        self.declare_parameter("stability_weight", 0.20)
+        self.declare_parameter("anchor_ratio_weight", 0.20)
+        self.declare_parameter("disturbance_penalty", 0.15)
 
         self.ground_truth_topic = (
             self.get_parameter("ground_truth_topic").get_parameter_value().string_value
@@ -80,6 +106,53 @@ class UwbRangeNode(Node):
             .get_parameter_value()
             .double_value
         )
+        self.adaptive_covariance = (
+            self.get_parameter("adaptive_covariance").get_parameter_value().bool_value
+        )
+        self.consistency_min_score = (
+            self.get_parameter("consistency_min_score")
+            .get_parameter_value()
+            .double_value
+        )
+        self.consistency_max_scale = (
+            self.get_parameter("consistency_max_scale")
+            .get_parameter_value()
+            .double_value
+        )
+        self.range_rmse_beta = (
+            self.get_parameter("range_rmse_beta").get_parameter_value().double_value
+        )
+        self.position_jump_beta = (
+            self.get_parameter("position_jump_beta").get_parameter_value().double_value
+        )
+        self.position_window_beta = (
+            self.get_parameter("position_window_beta").get_parameter_value().double_value
+        )
+        self.range_rmse_weight = (
+            self.get_parameter("range_rmse_weight").get_parameter_value().double_value
+        )
+        self.continuity_weight = (
+            self.get_parameter("continuity_weight").get_parameter_value().double_value
+        )
+        self.stability_weight = (
+            self.get_parameter("stability_weight").get_parameter_value().double_value
+        )
+        self.anchor_ratio_weight = (
+            self.get_parameter("anchor_ratio_weight").get_parameter_value().double_value
+        )
+        self.disturbance_penalty = (
+            self.get_parameter("disturbance_penalty").get_parameter_value().double_value
+        )
+
+        window_size = max(
+            2,
+            self.get_parameter("consistency_window_size")
+            .get_parameter_value()
+            .integer_value,
+        )
+        self.recent_estimated_positions: Deque[Tuple[float, float]] = deque(
+            maxlen=window_size
+        )
 
         seed = self.get_parameter("random_seed").get_parameter_value().integer_value
         self.random_generator = random.Random()
@@ -101,6 +174,10 @@ class UwbRangeNode(Node):
         self.latest_anchor_status: Dict[str, Dict[str, Any]] = {}
         self.latest_estimated_pose: Optional[Dict[str, Any]] = None
         self.latest_measurement_ready = False
+        self.latest_position_covariance_xy = self.position_covariance_xy
+        self.latest_consistency_score = 1.0
+        self.previous_estimated_xy: Optional[Tuple[float, float]] = None
+
         self.pose_publisher = None
         if self.publish_pose:
             self.pose_publisher = self.create_publisher(
@@ -118,6 +195,7 @@ class UwbRangeNode(Node):
             f"noise_stddev={self.noise_stddev:.3f} m, "
             f"use_3d_distance={self.use_3d_distance}, "
             f"publish_pose={self.publish_pose}, "
+            f"adaptive_covariance={self.adaptive_covariance}, "
             f"zone_disturbances={len(self.zone_disturbances)}, "
             f"anchors={self.anchor_names}"
         )
@@ -179,8 +257,28 @@ class UwbRangeNode(Node):
         self.latest_truth_ranges = truth_ranges
         self.latest_noisy_ranges = noisy_ranges
         self.latest_anchor_status = anchor_status
-        self.latest_estimated_pose = self.solve_position_from_ranges(noisy_ranges)
+
+        estimated_pose = self.solve_position_from_ranges(noisy_ranges)
+        self.latest_estimated_pose = estimated_pose
         self.latest_measurement_ready = True
+
+        if estimated_pose is not None:
+            consistency_score, covariance_xy = self._evaluate_pose_quality(
+                estimated_pose, anchor_status
+            )
+            self.latest_position_covariance_xy = covariance_xy
+            self.latest_consistency_score = consistency_score
+            estimated_pose["consistency_score"] = consistency_score
+            estimated_pose["covariance_xy"] = covariance_xy
+            current_xy = (estimated_pose["x"], estimated_pose["y"])
+            self.previous_estimated_xy = current_xy
+            self.recent_estimated_positions.append(current_xy)
+        else:
+            self.latest_position_covariance_xy = (
+                self.position_covariance_xy * self.consistency_max_scale
+            )
+            self.latest_consistency_score = self.consistency_min_score
+
         if self.publish_pose and self.pose_publisher is not None:
             pose_msg = self._build_pose_message(msg)
             if pose_msg is not None:
@@ -244,6 +342,7 @@ class UwbRangeNode(Node):
                 anchor_name,
                 self.anchor_poses[anchor_name]["x"],
                 self.anchor_poses[anchor_name]["y"],
+                self.anchor_poses[anchor_name]["z"],
                 range_value,
             )
             for anchor_name, range_value in range_measurements.items()
@@ -253,14 +352,14 @@ class UwbRangeNode(Node):
         if len(valid_measurements) < 3:
             return None
 
-        ref_name, ref_x, ref_y, ref_range = valid_measurements[0]
+        ref_name, ref_x, ref_y, _, ref_range = valid_measurements[0]
         normal_a00 = 0.0
         normal_a01 = 0.0
         normal_a11 = 0.0
         normal_b0 = 0.0
         normal_b1 = 0.0
 
-        for _, anchor_x, anchor_y, anchor_range in valid_measurements[1:]:
+        for _, anchor_x, anchor_y, _, anchor_range in valid_measurements[1:]:
             a0 = 2.0 * (anchor_x - ref_x)
             a1 = 2.0 * (anchor_y - ref_y)
             b = (
@@ -291,12 +390,30 @@ class UwbRangeNode(Node):
             normal_a00 * normal_b1 - normal_a01 * normal_b0
         ) / determinant
 
+        range_residuals = []
+        for anchor_name, anchor_x, anchor_y, anchor_z, measured_range in valid_measurements:
+            predicted_range = self._compute_range(
+                position_x,
+                position_y,
+                self.default_pose_z,
+                anchor_x,
+                anchor_y,
+                anchor_z,
+            )
+            range_residuals.append(predicted_range - measured_range)
+
+        range_rmse = math.sqrt(
+            sum(residual * residual for residual in range_residuals)
+            / float(len(range_residuals))
+        )
+
         return {
             "x": position_x,
             "y": position_y,
             "z": self.default_pose_z,
             "anchor_count": float(len(valid_measurements)),
             "reference_anchor": ref_name,
+            "range_rmse": range_rmse,
         }
 
     def _compute_range(
@@ -356,7 +473,9 @@ class UwbRangeNode(Node):
         total_noise_stddev = self.noise_stddev + extra_noise_stddev
         noisy_range = max(
             self.min_range,
-            truth_range + total_bias + self.random_generator.gauss(0.0, total_noise_stddev),
+            truth_range
+            + total_bias
+            + self.random_generator.gauss(0.0, total_noise_stddev),
         )
         return noisy_range, {
             "valid": True,
@@ -367,6 +486,86 @@ class UwbRangeNode(Node):
             "noise_stddev": total_noise_stddev,
             "measured_range": noisy_range,
         }
+
+    def _evaluate_pose_quality(
+        self,
+        estimated_pose: Dict[str, Any],
+        anchor_status: Dict[str, Dict[str, Any]],
+    ) -> Tuple[float, float]:
+        if not self.adaptive_covariance:
+            return 1.0, self.position_covariance_xy
+
+        range_rmse = float(estimated_pose.get("range_rmse", 0.0))
+        anchor_count = float(estimated_pose.get("anchor_count", 0.0))
+        anchor_ratio = min(1.0, anchor_count / float(max(1, len(self.anchor_names))))
+
+        current_xy = (float(estimated_pose["x"]), float(estimated_pose["y"]))
+        if self.previous_estimated_xy is None:
+            position_jump = 0.0
+        else:
+            position_jump = math.hypot(
+                current_xy[0] - self.previous_estimated_xy[0],
+                current_xy[1] - self.previous_estimated_xy[1],
+            )
+
+        history = list(self.recent_estimated_positions)
+        history.append(current_xy)
+        x_values = [position[0] for position in history]
+        y_values = [position[1] for position in history]
+        position_window_std = math.sqrt(variance(x_values) + variance(y_values))
+
+        disturbed_anchor_count = 0
+        dropout_count = 0
+        for status in anchor_status.values():
+            if status.get("dropout", False):
+                dropout_count += 1
+            if status.get("active_zones"):
+                disturbed_anchor_count += 1
+
+        disturbance_scale = 1.0 / (
+            1.0
+            + self.disturbance_penalty * float(disturbed_anchor_count + dropout_count)
+        )
+
+        range_score = math.exp(
+            -(range_rmse * range_rmse)
+            / max(self.range_rmse_beta * self.range_rmse_beta, 1e-6)
+        )
+        continuity_score = math.exp(
+            -(position_jump * position_jump)
+            / max(self.position_jump_beta * self.position_jump_beta, 1e-6)
+        )
+        stability_score = math.exp(
+            -(position_window_std * position_window_std)
+            / max(self.position_window_beta * self.position_window_beta, 1e-6)
+        )
+
+        weight_sum = (
+            self.range_rmse_weight
+            + self.continuity_weight
+            + self.stability_weight
+            + self.anchor_ratio_weight
+        )
+        if weight_sum <= 1e-9:
+            weight_sum = 1.0
+
+        consistency_score = (
+            self.range_rmse_weight * range_score
+            + self.continuity_weight * continuity_score
+            + self.stability_weight * stability_score
+            + self.anchor_ratio_weight * anchor_ratio
+        ) / weight_sum
+        consistency_score *= disturbance_scale
+        consistency_score = max(
+            self.consistency_min_score, min(1.0, consistency_score)
+        )
+
+        covariance_scale = min(
+            self.consistency_max_scale,
+            max(1.0, 1.0 / max(consistency_score, 1e-6)),
+        )
+        covariance_xy = self.position_covariance_xy * covariance_scale
+        return consistency_score, covariance_xy
 
     def _build_pose_message(
         self, odom_msg: Odometry
@@ -382,8 +581,8 @@ class UwbRangeNode(Node):
         pose_msg.pose.pose.position.z = self.latest_estimated_pose["z"]
         pose_msg.pose.pose.orientation.w = 1.0
         covariance = [0.0] * 36
-        covariance[0] = self.position_covariance_xy
-        covariance[7] = self.position_covariance_xy
+        covariance[0] = self.latest_position_covariance_xy
+        covariance[7] = self.latest_position_covariance_xy
         covariance[14] = self.position_covariance_z
         covariance[21] = self.orientation_covariance_rpy
         covariance[28] = self.orientation_covariance_rpy

@@ -22,6 +22,7 @@ def generate_launch_description():
     use_nav2 = LaunchConfiguration("use_nav2")
     use_static_map = LaunchConfiguration("use_static_map")
     use_rviz = LaunchConfiguration("use_rviz")
+    fusion_method = LaunchConfiguration("fusion_method")
 
     start_uwb = LaunchConfiguration("start_uwb")
     start_ekf = LaunchConfiguration("start_ekf")
@@ -54,6 +55,22 @@ def generate_launch_description():
         "occupancy_grid_publish_period"
     )
     rviz_config = LaunchConfiguration("rviz_config")
+
+    ekf_mode = PythonExpression(["'", fusion_method, "'"])
+    use_uwb_measurement_covariance = PythonExpression(
+        [
+            "'true' if '",
+            fusion_method,
+            "' in ['uwb_adaptive', 'dual_adaptive'] else 'false'"
+        ]
+    )
+    use_slam_measurement_covariance = PythonExpression(
+        [
+            "'true' if '",
+            fusion_method,
+            "' in ['slam_adaptive', 'dual_adaptive'] else 'false'"
+        ]
+    )
 
     nav2_enabled_in_slam_mode = PythonExpression(
         ["'", use_nav2, "' == 'true' and '", use_static_map, "' != 'true'"]
@@ -117,6 +134,11 @@ def generate_launch_description():
         launch_arguments={
             "use_sim_time": use_sim_time,
             "params_file": ekf_params_file,
+            "mode": ekf_mode,
+            "use_measurement_covariance": "true",
+            "use_uwb_measurement_covariance": use_uwb_measurement_covariance,
+            "use_slam_measurement_covariance": use_slam_measurement_covariance,
+            "use_imu_measurement_covariance": "true",
         }.items(),
     )
 
@@ -193,6 +215,10 @@ def generate_launch_description():
             DeclareLaunchArgument("use_nav2", default_value="true"),
             DeclareLaunchArgument("use_static_map", default_value="true"),
             DeclareLaunchArgument("use_rviz", default_value="true"),
+            DeclareLaunchArgument(
+                "fusion_method",
+                default_value="dual_adaptive",
+            ),
             DeclareLaunchArgument("start_uwb", default_value="true"),
             DeclareLaunchArgument("start_ekf", default_value="true"),
             DeclareLaunchArgument("autostart", default_value="true"),

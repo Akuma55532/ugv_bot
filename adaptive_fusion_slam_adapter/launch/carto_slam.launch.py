@@ -25,6 +25,10 @@ def generate_launch_description():
     tracked_pose_topic = LaunchConfiguration("tracked_pose_topic")
     slam_pose_topic = LaunchConfiguration("slam_pose_topic")
     slam_pose_rate = LaunchConfiguration("slam_pose_rate")
+    reference_odom_topic = LaunchConfiguration("reference_odom_topic")
+    slam_adaptive_covariance = LaunchConfiguration("slam_adaptive_covariance")
+    slam_position_covariance_xy = LaunchConfiguration("slam_position_covariance_xy")
+    slam_yaw_covariance = LaunchConfiguration("slam_yaw_covariance")
 
     cartographer_node = Node(
         package="cartographer_ros",
@@ -68,6 +72,10 @@ def generate_launch_description():
             {"tracked_pose_topic": tracked_pose_topic},
             {"slam_pose_topic": slam_pose_topic},
             {"publish_rate": slam_pose_rate},
+            {"reference_odom_topic": reference_odom_topic},
+            {"adaptive_covariance": slam_adaptive_covariance},
+            {"position_covariance_xy": slam_position_covariance_xy},
+            {"yaw_covariance": slam_yaw_covariance},
         ],
     )
 
@@ -83,6 +91,10 @@ def generate_launch_description():
             DeclareLaunchArgument("tracked_pose_topic", default_value="/tracked_pose"),
             DeclareLaunchArgument("slam_pose_topic", default_value="/slam/pose"),
             DeclareLaunchArgument("slam_pose_rate", default_value="10.0"),
+            DeclareLaunchArgument("reference_odom_topic", default_value="/odom"),
+            DeclareLaunchArgument("slam_adaptive_covariance", default_value="true"),
+            DeclareLaunchArgument("slam_position_covariance_xy", default_value="0.05"),
+            DeclareLaunchArgument("slam_yaw_covariance", default_value="0.05"),
             DeclareLaunchArgument(
                 "configuration_directory",
                 default_value=os.path.join(pkg_share, "config"),

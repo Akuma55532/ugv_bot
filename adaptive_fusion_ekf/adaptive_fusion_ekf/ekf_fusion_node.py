@@ -50,6 +50,9 @@ class EkfFusionNode(Node):
         self.declare_parameter("path_publish_stride", 5)
         self.declare_parameter("path_max_length", 500)
         self.declare_parameter("use_measurement_covariance", True)
+        self.declare_parameter("use_uwb_measurement_covariance", True)
+        self.declare_parameter("use_slam_measurement_covariance", True)
+        self.declare_parameter("use_imu_measurement_covariance", True)
         self.declare_parameter("min_measurement_variance", 1e-4)
 
         self.declare_parameter("initial_covariance_x", 1.0)
@@ -114,6 +117,21 @@ class EkfFusionNode(Node):
         )
         self.use_measurement_covariance = (
             self.get_parameter("use_measurement_covariance")
+            .get_parameter_value()
+            .bool_value
+        )
+        self.use_uwb_measurement_covariance = (
+            self.get_parameter("use_uwb_measurement_covariance")
+            .get_parameter_value()
+            .bool_value
+        )
+        self.use_slam_measurement_covariance = (
+            self.get_parameter("use_slam_measurement_covariance")
+            .get_parameter_value()
+            .bool_value
+        )
+        self.use_imu_measurement_covariance = (
+            self.get_parameter("use_imu_measurement_covariance")
             .get_parameter_value()
             .bool_value
         )
@@ -234,7 +252,10 @@ class EkfFusionNode(Node):
             "EKF fusion node started. "
             f"mode={self.mode}, world_frame={self.world_frame}, "
             f"odom_frame={self.odom_frame}, base_frame={self.base_frame}, "
-            f"publish_map_odom_tf={self.publish_map_odom_tf}"
+            f"publish_map_odom_tf={self.publish_map_odom_tf}, "
+            f"use_uwb_measurement_covariance={self.use_uwb_measurement_covariance}, "
+            f"use_slam_measurement_covariance={self.use_slam_measurement_covariance}, "
+            f"use_imu_measurement_covariance={self.use_imu_measurement_covariance}"
         )
 
     def odom_callback(self, msg: Odometry) -> None:
@@ -404,7 +425,9 @@ class EkfFusionNode(Node):
 
     def resolve_uwb_covariance(self, msg: PoseWithCovarianceStamped) -> np.ndarray:
         fallback = self.R_uwb_fixed.copy()
-        if not self.use_measurement_covariance:
+        if not (
+            self.use_measurement_covariance and self.use_uwb_measurement_covariance
+        ):
             return fallback
 
         covariance = msg.pose.covariance
@@ -417,7 +440,9 @@ class EkfFusionNode(Node):
 
     def resolve_slam_covariance(self, msg: PoseWithCovarianceStamped) -> np.ndarray:
         fallback = self.R_slam_fixed.copy()
-        if not self.use_measurement_covariance:
+        if not (
+            self.use_measurement_covariance and self.use_slam_measurement_covariance
+        ):
             return fallback
 
         covariance = msg.pose.covariance
@@ -431,7 +456,9 @@ class EkfFusionNode(Node):
 
     def resolve_imu_covariance(self, msg: Imu) -> np.ndarray:
         fallback = self.R_imu_fixed.copy()
-        if not self.use_measurement_covariance:
+        if not (
+            self.use_measurement_covariance and self.use_imu_measurement_covariance
+        ):
             return fallback
 
         return np.array(

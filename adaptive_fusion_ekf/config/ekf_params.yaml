@@ -2,7 +2,7 @@ ekf_fusion_node:
   ros__parameters:
     use_sim_time: true
 
-    mode: "fixed"
+    mode: "dual_adaptive"
     world_frame: "map"
     odom_frame: "odom"
     base_frame: "base_footprint"
@@ -26,6 +26,9 @@ ekf_fusion_node:
     path_publish_stride: 5
     path_max_length: 500
     use_measurement_covariance: true
+    use_uwb_measurement_covariance: true
+    use_slam_measurement_covariance: true
+    use_imu_measurement_covariance: true
     min_measurement_variance: 0.0001
 
     initial_covariance_x: 1.0
