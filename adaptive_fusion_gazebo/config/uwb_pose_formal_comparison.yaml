@@ -1,0 +1,57 @@
+uwb_anchors:
+  uwb_base1:
+    x: 3.6
+    y: 2.6
+    z: 0.01
+    roll: 0.0
+    pitch: 0.0
+    yaw: 0.0
+  uwb_base2:
+    x: 3.6
+    y: -2.0
+    z: 0.01
+    roll: 0.0
+    pitch: 0.0
+    yaw: 0.0
+  uwb_base3:
+    x: -2.2
+    y: 2.6
+    z: 0.01
+    roll: 0.0
+    pitch: 0.0
+    yaw: 0.0
+  uwb_base4:
+    x: -2.2
+    y: -2.0
+    z: 0.01
+    roll: 0.0
+    pitch: 0.0
+    yaw: 0.0
+
+disturbance_zones:
+  - name: uwb_corridor_nlos
+    enabled: false
+    min_x: 0.2
+    max_x: 2.3
+    min_y: -0.9
+    max_y: 0.9
+    affected_anchors:
+      - uwb_base1
+      - uwb_base2
+    extra_noise_stddev: 0.15
+    bias_mean: 0.20
+    bias_stddev: 0.05
+    dropout_prob: 0.05
+
+  - name: uwb_corner_shadow
+    enabled: false
+    min_x: -1.7
+    max_x: -0.4
+    min_y: 0.7
+    max_y: 2.1
+    affected_anchors:
+      - uwb_base3
+    extra_noise_stddev: 0.15
+    bias_mean: 0.20
+    bias_stddev: 0.05
+    dropout_prob: 0.05

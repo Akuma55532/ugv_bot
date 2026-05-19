@@ -19,6 +19,7 @@
   <depend>adaptive_fusion_uwb</depend>
   <depend>adaptive_fusion_ekf</depend>
   <depend>adaptive_fusion_navigation</depend>
+  <depend>adaptive_fusion_eval</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

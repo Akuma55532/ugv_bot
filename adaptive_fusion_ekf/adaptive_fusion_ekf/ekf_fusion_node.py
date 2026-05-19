@@ -1,4 +1,6 @@
 import math
+from collections import deque
+from typing import Deque
 from typing import Optional
 
 import numpy as np
@@ -24,6 +26,19 @@ def quaternion_to_yaw(x: float, y: float, z: float, w: float) -> float:
 def yaw_to_quaternion(yaw: float) -> tuple[float, float, float, float]:
     half_yaw = 0.5 * yaw
     return (0.0, 0.0, math.sin(half_yaw), math.cos(half_yaw))
+
+
+def mean(values: list[float]) -> float:
+    if not values:
+        return 0.0
+    return sum(values) / float(len(values))
+
+
+def variance(values: list[float]) -> float:
+    if len(values) < 2:
+        return 0.0
+    avg = mean(values)
+    return sum((value - avg) * (value - avg) for value in values) / float(len(values))
 
 
 class EkfFusionNode(Node):
@@ -69,6 +84,30 @@ class EkfFusionNode(Node):
         self.declare_parameter("slam_noise_y", 0.05)
         self.declare_parameter("slam_noise_theta", 0.05)
         self.declare_parameter("imu_noise_theta", 0.03)
+
+        self.declare_parameter("adaptive_window_size", 10)
+
+        self.declare_parameter("uwb_min_score", 0.05)
+        self.declare_parameter("uwb_max_scale", 20.0)
+        self.declare_parameter("uwb_innovation_beta", 0.60)
+        self.declare_parameter("uwb_jump_beta", 0.45)
+        self.declare_parameter("uwb_variance_beta", 0.30)
+        self.declare_parameter("uwb_innovation_weight", 0.50)
+        self.declare_parameter("uwb_jump_weight", 0.25)
+        self.declare_parameter("uwb_variance_weight", 0.25)
+
+        self.declare_parameter("slam_min_score", 0.05)
+        self.declare_parameter("slam_max_scale", 20.0)
+        self.declare_parameter("slam_position_innovation_beta", 0.30)
+        self.declare_parameter("slam_yaw_innovation_beta", 0.25)
+        self.declare_parameter("slam_step_position_beta", 0.18)
+        self.declare_parameter("slam_step_yaw_beta", 0.18)
+        self.declare_parameter("slam_odom_consistency_beta", 0.20)
+        self.declare_parameter("slam_position_weight", 0.35)
+        self.declare_parameter("slam_yaw_weight", 0.20)
+        self.declare_parameter("slam_step_position_weight", 0.15)
+        self.declare_parameter("slam_step_yaw_weight", 0.10)
+        self.declare_parameter("slam_odom_consistency_weight", 0.20)
 
         self.mode = self.get_parameter("mode").get_parameter_value().string_value
         self.world_frame = (
@@ -140,6 +179,12 @@ class EkfFusionNode(Node):
             .get_parameter_value()
             .double_value
         )
+        adaptive_window_size = max(
+            2,
+            self.get_parameter("adaptive_window_size")
+            .get_parameter_value()
+            .integer_value,
+        )
 
         self.uwb_topic = self.get_parameter("uwb_topic").get_parameter_value().string_value
         self.slam_topic = (
@@ -186,6 +231,93 @@ class EkfFusionNode(Node):
         self.R_imu_fixed = np.array(
             [[self.get_parameter("imu_noise_theta").get_parameter_value().double_value]]
         )
+        self.uwb_min_score = (
+            self.get_parameter("uwb_min_score").get_parameter_value().double_value
+        )
+        self.uwb_max_scale = (
+            self.get_parameter("uwb_max_scale").get_parameter_value().double_value
+        )
+        self.uwb_innovation_beta = (
+            self.get_parameter("uwb_innovation_beta")
+            .get_parameter_value()
+            .double_value
+        )
+        self.uwb_jump_beta = (
+            self.get_parameter("uwb_jump_beta").get_parameter_value().double_value
+        )
+        self.uwb_variance_beta = (
+            self.get_parameter("uwb_variance_beta")
+            .get_parameter_value()
+            .double_value
+        )
+        self.uwb_innovation_weight = (
+            self.get_parameter("uwb_innovation_weight")
+            .get_parameter_value()
+            .double_value
+        )
+        self.uwb_jump_weight = (
+            self.get_parameter("uwb_jump_weight").get_parameter_value().double_value
+        )
+        self.uwb_variance_weight = (
+            self.get_parameter("uwb_variance_weight")
+            .get_parameter_value()
+            .double_value
+        )
+
+        self.slam_min_score = (
+            self.get_parameter("slam_min_score").get_parameter_value().double_value
+        )
+        self.slam_max_scale = (
+            self.get_parameter("slam_max_scale").get_parameter_value().double_value
+        )
+        self.slam_position_innovation_beta = (
+            self.get_parameter("slam_position_innovation_beta")
+            .get_parameter_value()
+            .double_value
+        )
+        self.slam_yaw_innovation_beta = (
+            self.get_parameter("slam_yaw_innovation_beta")
+            .get_parameter_value()
+            .double_value
+        )
+        self.slam_step_position_beta = (
+            self.get_parameter("slam_step_position_beta")
+            .get_parameter_value()
+            .double_value
+        )
+        self.slam_step_yaw_beta = (
+            self.get_parameter("slam_step_yaw_beta")
+            .get_parameter_value()
+            .double_value
+        )
+        self.slam_odom_consistency_beta = (
+            self.get_parameter("slam_odom_consistency_beta")
+            .get_parameter_value()
+            .double_value
+        )
+        self.slam_position_weight = (
+            self.get_parameter("slam_position_weight")
+            .get_parameter_value()
+            .double_value
+        )
+        self.slam_yaw_weight = (
+            self.get_parameter("slam_yaw_weight").get_parameter_value().double_value
+        )
+        self.slam_step_position_weight = (
+            self.get_parameter("slam_step_position_weight")
+            .get_parameter_value()
+            .double_value
+        )
+        self.slam_step_yaw_weight = (
+            self.get_parameter("slam_step_yaw_weight")
+            .get_parameter_value()
+            .double_value
+        )
+        self.slam_odom_consistency_weight = (
+            self.get_parameter("slam_odom_consistency_weight")
+            .get_parameter_value()
+            .double_value
+        )
 
         self.state = np.zeros(3, dtype=float)
         self.covariance = self.initial_covariance.copy()
@@ -205,6 +337,17 @@ class EkfFusionNode(Node):
         self.latest_raw_odom_pose: Optional[np.ndarray] = None
         self.latest_raw_odom_pose_covariance = [0.0] * 36
         self.latest_raw_odom_twist_covariance = [0.0] * 36
+        self.previous_raw_odom_pose: Optional[np.ndarray] = None
+
+        self.uwb_history: Deque[np.ndarray] = deque(maxlen=adaptive_window_size)
+        self.previous_uwb_measurement: Optional[np.ndarray] = None
+        self.latest_uwb_score = 1.0
+        self.latest_uwb_scale = 1.0
+
+        self.slam_history: Deque[np.ndarray] = deque(maxlen=adaptive_window_size)
+        self.previous_slam_measurement: Optional[np.ndarray] = None
+        self.latest_slam_score = 1.0
+        self.latest_slam_scale = 1.0
 
         self.path_msg = Path()
         self.path_msg.header.frame_id = self.world_frame
@@ -284,11 +427,13 @@ class EkfFusionNode(Node):
             self.initialization_source = "odom"
             self.last_update_source = "odom_init"
             self.last_odom_time = current_time
+            self.previous_raw_odom_pose = self.latest_raw_odom_pose.copy()
             self.publish_outputs(msg.header.stamp)
             return
 
         if self.last_odom_time is None:
             self.last_odom_time = current_time
+            self.previous_raw_odom_pose = self.latest_raw_odom_pose.copy()
             return
 
         dt = max(0.0, current_time - self.last_odom_time)
@@ -300,8 +445,12 @@ class EkfFusionNode(Node):
         self.predict_count += 1
         self.last_update_source = "predict"
         self.publish_outputs(msg.header.stamp)
+        self.previous_raw_odom_pose = self.latest_raw_odom_pose.copy()
 
     def uwb_callback(self, msg: PoseWithCovarianceStamped) -> None:
+        if not self.is_uwb_update_enabled():
+            return
+
         measurement = np.array(
             [msg.pose.pose.position.x, msg.pose.pose.position.y], dtype=float
         )
@@ -324,6 +473,9 @@ class EkfFusionNode(Node):
         self.publish_outputs(msg.header.stamp)
 
     def slam_callback(self, msg: PoseWithCovarianceStamped) -> None:
+        if not self.is_slam_update_enabled():
+            return
+
         yaw = quaternion_to_yaw(
             msg.pose.pose.orientation.x,
             msg.pose.pose.orientation.y,
@@ -425,34 +577,37 @@ class EkfFusionNode(Node):
 
     def resolve_uwb_covariance(self, msg: PoseWithCovarianceStamped) -> np.ndarray:
         fallback = self.R_uwb_fixed.copy()
-        if not (
-            self.use_measurement_covariance and self.use_uwb_measurement_covariance
-        ):
+        if not self.is_uwb_adaptive_enabled():
+            self.latest_uwb_score = 1.0
+            self.latest_uwb_scale = 1.0
             return fallback
-
-        covariance = msg.pose.covariance
-        return np.diag(
-            [
-                self.safe_variance(covariance[0], fallback[0, 0]),
-                self.safe_variance(covariance[7], fallback[1, 1]),
-            ]
+        measurement = np.array(
+            [msg.pose.pose.position.x, msg.pose.pose.position.y], dtype=float
         )
+        score, scale = self.compute_uwb_adaptive_scale(measurement)
+        self.latest_uwb_score = score
+        self.latest_uwb_scale = scale
+        return fallback * scale
 
     def resolve_slam_covariance(self, msg: PoseWithCovarianceStamped) -> np.ndarray:
         fallback = self.R_slam_fixed.copy()
-        if not (
-            self.use_measurement_covariance and self.use_slam_measurement_covariance
-        ):
+        if not self.is_slam_adaptive_enabled():
+            self.latest_slam_score = 1.0
+            self.latest_slam_scale = 1.0
             return fallback
-
-        covariance = msg.pose.covariance
-        return np.diag(
-            [
-                self.safe_variance(covariance[0], fallback[0, 0]),
-                self.safe_variance(covariance[7], fallback[1, 1]),
-                self.safe_variance(covariance[35], fallback[2, 2]),
-            ]
+        yaw = quaternion_to_yaw(
+            msg.pose.pose.orientation.x,
+            msg.pose.pose.orientation.y,
+            msg.pose.pose.orientation.z,
+            msg.pose.pose.orientation.w,
         )
+        measurement = np.array(
+            [msg.pose.pose.position.x, msg.pose.pose.position.y, yaw], dtype=float
+        )
+        score, scale = self.compute_slam_adaptive_scale(measurement)
+        self.latest_slam_score = score
+        self.latest_slam_scale = scale
+        return fallback * scale
 
     def resolve_imu_covariance(self, msg: Imu) -> np.ndarray:
         fallback = self.R_imu_fixed.copy()
@@ -465,6 +620,149 @@ class EkfFusionNode(Node):
             [[self.safe_variance(msg.orientation_covariance[8], fallback[0, 0])]],
             dtype=float,
         )
+
+    def is_uwb_adaptive_enabled(self) -> bool:
+        return self.mode in ("uwb_adaptive", "dual_adaptive")
+
+    def is_slam_adaptive_enabled(self) -> bool:
+        return self.mode in ("slam_adaptive", "dual_adaptive")
+
+    def is_uwb_update_enabled(self) -> bool:
+        return self.mode != "only_slam"
+
+    def is_slam_update_enabled(self) -> bool:
+        return self.mode != "only_uwb"
+
+    def compute_uwb_adaptive_scale(
+        self, measurement: np.ndarray
+    ) -> tuple[float, float]:
+        innovation_norm = np.linalg.norm(measurement - self.state[0:2])
+        innovation_score = math.exp(
+            -(innovation_norm * innovation_norm)
+            / max(self.uwb_innovation_beta * self.uwb_innovation_beta, 1e-6)
+        )
+
+        if self.previous_uwb_measurement is None:
+            jump_norm = 0.0
+        else:
+            jump_norm = np.linalg.norm(measurement - self.previous_uwb_measurement)
+        jump_score = math.exp(
+            -(jump_norm * jump_norm)
+            / max(self.uwb_jump_beta * self.uwb_jump_beta, 1e-6)
+        )
+
+        history = list(self.uwb_history)
+        history.append(measurement.copy())
+        x_values = [float(item[0]) for item in history]
+        y_values = [float(item[1]) for item in history]
+        measurement_variance = math.sqrt(variance(x_values) + variance(y_values))
+        variance_score = math.exp(
+            -(measurement_variance * measurement_variance)
+            / max(self.uwb_variance_beta * self.uwb_variance_beta, 1e-6)
+        )
+
+        weight_sum = (
+            self.uwb_innovation_weight
+            + self.uwb_jump_weight
+            + self.uwb_variance_weight
+        )
+        if weight_sum <= 1e-9:
+            weight_sum = 1.0
+        score = (
+            self.uwb_innovation_weight * innovation_score
+            + self.uwb_jump_weight * jump_score
+            + self.uwb_variance_weight * variance_score
+        ) / weight_sum
+        score = max(self.uwb_min_score, min(1.0, score))
+        scale = min(self.uwb_max_scale, max(1.0, 1.0 / max(score, 1e-6)))
+
+        self.previous_uwb_measurement = measurement.copy()
+        self.uwb_history.append(measurement.copy())
+        return score, scale
+
+    def compute_slam_adaptive_scale(
+        self, measurement: np.ndarray
+    ) -> tuple[float, float]:
+        position_innovation = np.linalg.norm(measurement[0:2] - self.state[0:2])
+        position_score = math.exp(
+            -(position_innovation * position_innovation)
+            / max(
+                self.slam_position_innovation_beta
+                * self.slam_position_innovation_beta,
+                1e-6,
+            )
+        )
+
+        yaw_innovation = abs(normalize_angle(float(measurement[2] - self.state[2])))
+        yaw_score = math.exp(
+            -(yaw_innovation * yaw_innovation)
+            / max(self.slam_yaw_innovation_beta * self.slam_yaw_innovation_beta, 1e-6)
+        )
+
+        step_position = 0.0
+        step_yaw = 0.0
+        if self.previous_slam_measurement is not None:
+            step_position = np.linalg.norm(measurement[0:2] - self.previous_slam_measurement[0:2])
+            step_yaw = abs(
+                normalize_angle(float(measurement[2] - self.previous_slam_measurement[2]))
+            )
+        step_position_score = math.exp(
+            -(step_position * step_position)
+            / max(
+                self.slam_step_position_beta * self.slam_step_position_beta,
+                1e-6,
+            )
+        )
+        step_yaw_score = math.exp(
+            -(step_yaw * step_yaw)
+            / max(self.slam_step_yaw_beta * self.slam_step_yaw_beta, 1e-6)
+        )
+
+        odom_consistency_score = 1.0
+        if self.previous_raw_odom_pose is not None and self.latest_raw_odom_pose is not None:
+            odom_step_position = np.linalg.norm(
+                self.latest_raw_odom_pose[0:2] - self.previous_raw_odom_pose[0:2]
+            )
+            odom_step_yaw = abs(
+                normalize_angle(
+                    float(self.latest_raw_odom_pose[2] - self.previous_raw_odom_pose[2])
+                )
+            )
+            odom_consistency = math.sqrt(
+                (step_position - odom_step_position) * (step_position - odom_step_position)
+                + (step_yaw - odom_step_yaw) * (step_yaw - odom_step_yaw)
+            )
+            odom_consistency_score = math.exp(
+                -(odom_consistency * odom_consistency)
+                / max(
+                    self.slam_odom_consistency_beta
+                    * self.slam_odom_consistency_beta,
+                    1e-6,
+                )
+            )
+
+        weight_sum = (
+            self.slam_position_weight
+            + self.slam_yaw_weight
+            + self.slam_step_position_weight
+            + self.slam_step_yaw_weight
+            + self.slam_odom_consistency_weight
+        )
+        if weight_sum <= 1e-9:
+            weight_sum = 1.0
+        score = (
+            self.slam_position_weight * position_score
+            + self.slam_yaw_weight * yaw_score
+            + self.slam_step_position_weight * step_position_score
+            + self.slam_step_yaw_weight * step_yaw_score
+            + self.slam_odom_consistency_weight * odom_consistency_score
+        ) / weight_sum
+        score = max(self.slam_min_score, min(1.0, score))
+        scale = min(self.slam_max_scale, max(1.0, 1.0 / max(score, 1e-6)))
+
+        self.previous_slam_measurement = measurement.copy()
+        self.slam_history.append(measurement.copy())
+        return score, scale
 
     def safe_variance(self, variance: float, fallback: float) -> float:
         if not math.isfinite(variance) or variance < 0.0:
@@ -528,6 +826,10 @@ class EkfFusionNode(Node):
             self.source_to_debug_id(self.initialization_source),
             1.0 if self.latest_raw_odom_pose is not None else 0.0,
             1.0 if self.publish_map_odom_tf else 0.0,
+            float(self.latest_uwb_score),
+            float(self.latest_uwb_scale),
+            float(self.latest_slam_score),
+            float(self.latest_slam_scale),
         ]
         self.debug_publisher.publish(debug_msg)
 

@@ -199,6 +199,7 @@ class UwbRangeNode(Node):
             f"zone_disturbances={len(self.zone_disturbances)}, "
             f"anchors={self.anchor_names}"
         )
+        self._log_noise_parameters()
 
     def _resolve_default_pose_file(self) -> str:
         try:
@@ -212,6 +213,30 @@ class UwbRangeNode(Node):
     def _load_config(self, config_file: str) -> Dict[str, Any]:
         with open(config_file, "r", encoding="utf-8") as file:
             return yaml.safe_load(file) or {}
+
+    def _log_noise_parameters(self) -> None:
+        self.get_logger().info(
+            "[UWB Noise] "
+            f"base_noise_stddev={self.noise_stddev:.3f} m, "
+            f"min_range={self.min_range:.3f} m, "
+            f"random_seed={self.get_parameter('random_seed').value}"
+        )
+
+        if not self.zone_disturbances:
+            self.get_logger().info("[UWB Noise] disturbance_zones=0")
+            return
+
+        for zone in self.zone_disturbances:
+            self.get_logger().info(
+                "[UWB Noise] "
+                f"zone={zone['name']}, "
+                f"enabled={zone['enabled']}, "
+                f"affected_anchors={zone['affected_anchors']}, "
+                f"extra_noise_stddev={zone['extra_noise_stddev']:.3f} m, "
+                f"bias_mean={zone['bias_mean']:.3f} m, "
+                f"bias_stddev={zone['bias_stddev']:.3f} m, "
+                f"dropout_prob={zone['dropout_prob']:.3f}"
+            )
 
     def _parse_anchor_poses(self, config: Dict[str, Any]) -> Dict[str, Dict[str, float]]:
         anchors = config.get("uwb_anchors", {})
@@ -246,11 +271,13 @@ class UwbRangeNode(Node):
         return parsed_zones
 
     def odom_callback(self, msg: Odometry) -> None:
+        # Read the robot ground-truth position from Gazebo odometry.
         robot_x = msg.pose.pose.position.x
         robot_y = msg.pose.pose.position.y
         robot_z = msg.pose.pose.position.z
         self.latest_robot_pose = (robot_x, robot_y, robot_z)
 
+        # Simulate UWB range measurements for all anchors from the current pose.
         truth_ranges, noisy_ranges, anchor_status = self.compute_ranges_from_pose(
             robot_x, robot_y, robot_z
         )
@@ -258,11 +285,14 @@ class UwbRangeNode(Node):
         self.latest_noisy_ranges = noisy_ranges
         self.latest_anchor_status = anchor_status
 
+        # Solve the robot position by trilateration using the current range set.
         estimated_pose = self.solve_position_from_ranges(noisy_ranges)
         self.latest_estimated_pose = estimated_pose
         self.latest_measurement_ready = True
 
         if estimated_pose is not None:
+            # Evaluate the solution quality and convert it into a covariance
+            # that can be consumed by the downstream fusion node.
             consistency_score, covariance_xy = self._evaluate_pose_quality(
                 estimated_pose, anchor_status
             )
@@ -274,11 +304,13 @@ class UwbRangeNode(Node):
             self.previous_estimated_xy = current_xy
             self.recent_estimated_positions.append(current_xy)
         else:
+            # If trilateration fails, keep the measurement marked as low confidence.
             self.latest_position_covariance_xy = (
                 self.position_covariance_xy * self.consistency_max_scale
             )
             self.latest_consistency_score = self.consistency_min_score
 
+        # Publish the simulated UWB pose for EKF or other downstream consumers.
         if self.publish_pose and self.pose_publisher is not None:
             pose_msg = self._build_pose_message(msg)
             if pose_msg is not None:

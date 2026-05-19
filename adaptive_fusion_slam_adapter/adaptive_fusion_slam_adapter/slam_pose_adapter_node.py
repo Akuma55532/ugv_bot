@@ -1,5 +1,6 @@
 import math
 from collections import deque
+import random
 from typing import Deque, Optional, Tuple
 
 import rclpy
@@ -18,6 +19,11 @@ def quaternion_to_yaw(x: float, y: float, z: float, w: float) -> float:
     siny_cosp = 2.0 * (w * z + x * y)
     cosy_cosp = 1.0 - 2.0 * (y * y + z * z)
     return math.atan2(siny_cosp, cosy_cosp)
+
+
+def yaw_to_quaternion(yaw: float) -> tuple[float, float, float, float]:
+    half_yaw = 0.5 * yaw
+    return (0.0, 0.0, math.sin(half_yaw), math.cos(half_yaw))
 
 
 def mean(values: list[float]) -> float:
@@ -49,6 +55,10 @@ class SlamPoseAdapterNode(Node):
         self.declare_parameter("roll_pitch_covariance", 9999.0)
         self.declare_parameter("yaw_covariance", 0.05)
         self.declare_parameter("adaptive_covariance", True)
+        self.declare_parameter("inject_noise", False)
+        self.declare_parameter("position_noise_stddev", 0.0)
+        self.declare_parameter("yaw_noise_stddev", 0.0)
+        self.declare_parameter("noise_seed", -1)
         self.declare_parameter("consistency_window_size", 10)
         self.declare_parameter("consistency_min_score", 0.05)
         self.declare_parameter("consistency_max_scale", 20.0)
@@ -106,6 +116,21 @@ class SlamPoseAdapterNode(Node):
         self.adaptive_covariance = (
             self.get_parameter("adaptive_covariance").get_parameter_value().bool_value
         )
+        self.inject_noise = (
+            self.get_parameter("inject_noise").get_parameter_value().bool_value
+        )
+        self.position_noise_stddev = (
+            self.get_parameter("position_noise_stddev")
+            .get_parameter_value()
+            .double_value
+        )
+        self.yaw_noise_stddev = (
+            self.get_parameter("yaw_noise_stddev").get_parameter_value().double_value
+        )
+        noise_seed = self.get_parameter("noise_seed").get_parameter_value().integer_value
+        self.random_generator = random.Random()
+        if noise_seed >= 0:
+            self.random_generator.seed(noise_seed)
         self.consistency_min_score = (
             self.get_parameter("consistency_min_score")
             .get_parameter_value()
@@ -203,7 +228,10 @@ class SlamPoseAdapterNode(Node):
             f"robot_frame={self.robot_frame}, tracked_pose_topic={self.tracked_pose_topic}, "
             f"reference_odom_topic={self.reference_odom_topic}, "
             f"slam_pose_topic={self.slam_pose_topic}, publish_rate={self.publish_rate:.2f} Hz, "
-            f"adaptive_covariance={self.adaptive_covariance}"
+            f"adaptive_covariance={self.adaptive_covariance}, "
+            f"inject_noise={self.inject_noise}, "
+            f"position_noise_stddev={self.position_noise_stddev:.3f}, "
+            f"yaw_noise_stddev={self.yaw_noise_stddev:.3f}"
         )
 
     def odom_callback(self, msg: Odometry) -> None:
@@ -377,17 +405,24 @@ class SlamPoseAdapterNode(Node):
             orientation.z,
             orientation.w,
         )
-        _, position_covariance_xy, yaw_covariance = self.evaluate_pose_quality(
+        noisy_position_x, noisy_position_y, noisy_yaw = self.apply_pose_noise(
             position_x, position_y, yaw
         )
+        _, position_covariance_xy, yaw_covariance = self.evaluate_pose_quality(
+            noisy_position_x, noisy_position_y, noisy_yaw
+        )
+        qx, qy, qz, qw = yaw_to_quaternion(noisy_yaw)
 
         pose_msg = PoseWithCovarianceStamped()
         pose_msg.header.stamp = stamp
         pose_msg.header.frame_id = frame_id
-        pose_msg.pose.pose.position.x = position_x
-        pose_msg.pose.pose.position.y = position_y
+        pose_msg.pose.pose.position.x = noisy_position_x
+        pose_msg.pose.pose.position.y = noisy_position_y
         pose_msg.pose.pose.position.z = position_z
-        pose_msg.pose.pose.orientation = orientation
+        pose_msg.pose.pose.orientation.x = qx
+        pose_msg.pose.pose.orientation.y = qy
+        pose_msg.pose.pose.orientation.z = qz
+        pose_msg.pose.pose.orientation.w = qw
 
         covariance = [0.0] * 36
         covariance[0] = position_covariance_xy
@@ -398,6 +433,27 @@ class SlamPoseAdapterNode(Node):
         covariance[35] = yaw_covariance
         pose_msg.pose.covariance = covariance
         return pose_msg
+
+    def apply_pose_noise(
+        self, position_x: float, position_y: float, yaw: float
+    ) -> tuple[float, float, float]:
+        if not self.inject_noise:
+            return position_x, position_y, yaw
+
+        noisy_x = position_x
+        noisy_y = position_y
+        noisy_yaw = yaw
+
+        if self.position_noise_stddev > 0.0:
+            noisy_x += self.random_generator.gauss(0.0, self.position_noise_stddev)
+            noisy_y += self.random_generator.gauss(0.0, self.position_noise_stddev)
+
+        if self.yaw_noise_stddev > 0.0:
+            noisy_yaw = normalize_angle(
+                yaw + self.random_generator.gauss(0.0, self.yaw_noise_stddev)
+            )
+
+        return noisy_x, noisy_y, noisy_yaw
 
 
 def main(args=None) -> None:

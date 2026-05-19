@@ -39,9 +39,16 @@ def generate_launch_description():
 
     uwb_pose_file = LaunchConfiguration("uwb_pose_file")
     uwb_noise_stddev = LaunchConfiguration("uwb_noise_stddev")
+    uwb_enable_range_noise = LaunchConfiguration("uwb_enable_range_noise")
+    uwb_enable_zone_disturbance = LaunchConfiguration("uwb_enable_zone_disturbance")
+    uwb_ideal_pose_mode = LaunchConfiguration("uwb_ideal_pose_mode")
     uwb_random_seed = LaunchConfiguration("uwb_random_seed")
     uwb_publish_pose_topic = LaunchConfiguration("uwb_publish_pose_topic")
     ground_truth_topic = LaunchConfiguration("ground_truth_topic")
+    uwb_adaptive_covariance = LaunchConfiguration("uwb_adaptive_covariance")
+    uwb_position_covariance_xy = LaunchConfiguration("uwb_position_covariance_xy")
+    uwb_consistency_min_score = LaunchConfiguration("uwb_consistency_min_score")
+    uwb_consistency_max_scale = LaunchConfiguration("uwb_consistency_max_scale")
 
     ekf_params_file = LaunchConfiguration("ekf_params_file")
     nav2_params_file = LaunchConfiguration("nav2_params_file")
@@ -55,6 +62,14 @@ def generate_launch_description():
         "occupancy_grid_publish_period"
     )
     rviz_config = LaunchConfiguration("rviz_config")
+    reference_odom_topic = LaunchConfiguration("reference_odom_topic")
+    slam_adaptive_covariance = LaunchConfiguration("slam_adaptive_covariance")
+    slam_position_covariance_xy = LaunchConfiguration("slam_position_covariance_xy")
+    slam_yaw_covariance = LaunchConfiguration("slam_yaw_covariance")
+    slam_inject_noise = LaunchConfiguration("slam_inject_noise")
+    slam_position_noise_stddev = LaunchConfiguration("slam_position_noise_stddev")
+    slam_yaw_noise_stddev = LaunchConfiguration("slam_yaw_noise_stddev")
+    slam_noise_seed = LaunchConfiguration("slam_noise_seed")
 
     ekf_mode = PythonExpression(["'", fusion_method, "'"])
     use_uwb_measurement_covariance = PythonExpression(
@@ -103,8 +118,15 @@ def generate_launch_description():
             "uwb_pose_file": uwb_pose_file,
             "ground_truth_topic": ground_truth_topic,
             "uwb_noise_stddev": uwb_noise_stddev,
+            "uwb_enable_range_noise": uwb_enable_range_noise,
+            "uwb_enable_zone_disturbance": uwb_enable_zone_disturbance,
+            "uwb_ideal_pose_mode": uwb_ideal_pose_mode,
             "uwb_random_seed": uwb_random_seed,
             "uwb_publish_pose_topic": uwb_publish_pose_topic,
+            "uwb_adaptive_covariance": uwb_adaptive_covariance,
+            "uwb_position_covariance_xy": uwb_position_covariance_xy,
+            "uwb_consistency_min_score": uwb_consistency_min_score,
+            "uwb_consistency_max_scale": uwb_consistency_max_scale,
         }.items(),
     )
 
@@ -123,6 +145,14 @@ def generate_launch_description():
             "tracked_pose_topic": tracked_pose_topic,
             "slam_pose_topic": slam_pose_topic,
             "slam_pose_rate": slam_pose_rate,
+            "reference_odom_topic": reference_odom_topic,
+            "slam_adaptive_covariance": slam_adaptive_covariance,
+            "slam_position_covariance_xy": slam_position_covariance_xy,
+            "slam_yaw_covariance": slam_yaw_covariance,
+            "slam_inject_noise": slam_inject_noise,
+            "slam_position_noise_stddev": slam_position_noise_stddev,
+            "slam_yaw_noise_stddev": slam_yaw_noise_stddev,
+            "slam_noise_seed": slam_noise_seed,
         }.items(),
     )
 
@@ -237,11 +267,39 @@ def generate_launch_description():
                 "ground_truth_topic",
                 default_value="/ground_truth/odom",
             ),
-            DeclareLaunchArgument("uwb_noise_stddev", default_value="0.1"),
+            DeclareLaunchArgument("uwb_noise_stddev", default_value="0.06"),
+            DeclareLaunchArgument(
+                "uwb_enable_range_noise",
+                default_value="true",
+            ),
+            DeclareLaunchArgument(
+                "uwb_enable_zone_disturbance",
+                default_value="true",
+            ),
+            DeclareLaunchArgument(
+                "uwb_ideal_pose_mode",
+                default_value="false",
+            ),
             DeclareLaunchArgument("uwb_random_seed", default_value="-1"),
             DeclareLaunchArgument(
                 "uwb_publish_pose_topic",
                 default_value="/uwb/pose",
+            ),
+            DeclareLaunchArgument(
+                "uwb_adaptive_covariance",
+                default_value="true",
+            ),
+            DeclareLaunchArgument(
+                "uwb_position_covariance_xy",
+                default_value="0.01",
+            ),
+            DeclareLaunchArgument(
+                "uwb_consistency_min_score",
+                default_value="0.05",
+            ),
+            DeclareLaunchArgument(
+                "uwb_consistency_max_scale",
+                default_value="20.0",
             ),
             DeclareLaunchArgument(
                 "ekf_params_file",
@@ -264,6 +322,35 @@ def generate_launch_description():
             DeclareLaunchArgument("slam_pose_topic", default_value="/slam/pose"),
             DeclareLaunchArgument("tracked_pose_topic", default_value="/tracked_pose"),
             DeclareLaunchArgument("slam_pose_rate", default_value="10.0"),
+            DeclareLaunchArgument("reference_odom_topic", default_value="/odom"),
+            DeclareLaunchArgument(
+                "slam_adaptive_covariance",
+                default_value="true",
+            ),
+            DeclareLaunchArgument(
+                "slam_position_covariance_xy",
+                default_value="0.05",
+            ),
+            DeclareLaunchArgument(
+                "slam_yaw_covariance",
+                default_value="0.05",
+            ),
+            DeclareLaunchArgument(
+                "slam_inject_noise",
+                default_value="true",
+            ),
+            DeclareLaunchArgument(
+                "slam_position_noise_stddev",
+                default_value="0.01",
+            ),
+            DeclareLaunchArgument(
+                "slam_yaw_noise_stddev",
+                default_value="0.01",
+            ),
+            DeclareLaunchArgument(
+                "slam_noise_seed",
+                default_value="7",
+            ),
             DeclareLaunchArgument(
                 "occupancy_grid_resolution",
                 default_value="0.05",

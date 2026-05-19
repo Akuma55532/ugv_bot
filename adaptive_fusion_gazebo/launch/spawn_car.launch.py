@@ -53,8 +53,15 @@ def generate_launch_description():
     uwb_pose_file = LaunchConfiguration('uwb_pose_file')
     ground_truth_topic = LaunchConfiguration('ground_truth_topic')
     uwb_noise_stddev = LaunchConfiguration('uwb_noise_stddev')
+    uwb_enable_range_noise = LaunchConfiguration('uwb_enable_range_noise')
+    uwb_enable_zone_disturbance = LaunchConfiguration('uwb_enable_zone_disturbance')
+    uwb_ideal_pose_mode = LaunchConfiguration('uwb_ideal_pose_mode')
     uwb_random_seed = LaunchConfiguration('uwb_random_seed')
     uwb_publish_pose_topic = LaunchConfiguration('uwb_publish_pose_topic')
+    uwb_adaptive_covariance = LaunchConfiguration('uwb_adaptive_covariance')
+    uwb_position_covariance_xy = LaunchConfiguration('uwb_position_covariance_xy')
+    uwb_consistency_min_score = LaunchConfiguration('uwb_consistency_min_score')
+    uwb_consistency_max_scale = LaunchConfiguration('uwb_consistency_max_scale')
     pose = {'x': LaunchConfiguration('x_pose', default='-2.00'),
             'y': LaunchConfiguration('y_pose', default='-0.50'),
             'z': LaunchConfiguration('z_pose', default='0.01'),
@@ -131,8 +138,23 @@ def generate_launch_description():
 
     declare_uwb_noise_stddev_cmd = DeclareLaunchArgument(
         'uwb_noise_stddev',
-        default_value='0.1',
+        default_value='0.06',
         description='Gaussian noise stddev in meters for simulated UWB ranges')
+
+    declare_uwb_enable_range_noise_cmd = DeclareLaunchArgument(
+        'uwb_enable_range_noise',
+        default_value='true',
+        description='Enable Gaussian range noise in the UWB simulator')
+
+    declare_uwb_enable_zone_disturbance_cmd = DeclareLaunchArgument(
+        'uwb_enable_zone_disturbance',
+        default_value='true',
+        description='Enable YAML-configured UWB disturbance zones')
+
+    declare_uwb_ideal_pose_mode_cmd = DeclareLaunchArgument(
+        'uwb_ideal_pose_mode',
+        default_value='false',
+        description='Publish ideal UWB pose directly from ground truth instead of trilateration')
 
     declare_uwb_random_seed_cmd = DeclareLaunchArgument(
         'uwb_random_seed',
@@ -143,6 +165,26 @@ def generate_launch_description():
         'uwb_publish_pose_topic',
         default_value='/uwb/pose',
         description='Output topic for the simulated UWB position estimate')
+
+    declare_uwb_adaptive_covariance_cmd = DeclareLaunchArgument(
+        'uwb_adaptive_covariance',
+        default_value='true',
+        description='Enable adaptive covariance output for the simulated UWB pose')
+
+    declare_uwb_position_covariance_xy_cmd = DeclareLaunchArgument(
+        'uwb_position_covariance_xy',
+        default_value='0.01',
+        description='Base XY covariance for the simulated UWB position estimate')
+
+    declare_uwb_consistency_min_score_cmd = DeclareLaunchArgument(
+        'uwb_consistency_min_score',
+        default_value='0.05',
+        description='Lower bound of the UWB consistency score')
+
+    declare_uwb_consistency_max_scale_cmd = DeclareLaunchArgument(
+        'uwb_consistency_max_scale',
+        default_value='20.0',
+        description='Maximum covariance inflation scale for low-confidence UWB observations')
 
     start_gazebo_server_cmd = ExecuteProcess(
         cmd=['gzserver', '-s', 'libgazebo_ros_init.so',
@@ -191,10 +233,17 @@ def generate_launch_description():
                 'ground_truth_topic': ground_truth_topic,
                 'uwb_pose_file': uwb_pose_file,
                 'noise_stddev': uwb_noise_stddev,
+                'enable_range_noise': uwb_enable_range_noise,
+                'enable_zone_disturbance': uwb_enable_zone_disturbance,
+                'ideal_pose_mode': uwb_ideal_pose_mode,
                 'random_seed': uwb_random_seed,
                 'publish_pose': True,
                 'publish_pose_topic': uwb_publish_pose_topic,
                 'pose_frame': 'map',
+                'adaptive_covariance': uwb_adaptive_covariance,
+                'position_covariance_xy': uwb_position_covariance_xy,
+                'consistency_min_score': uwb_consistency_min_score,
+                'consistency_max_scale': uwb_consistency_max_scale,
             }
         ],
     )
@@ -216,8 +265,15 @@ def generate_launch_description():
     ld.add_action(declare_uwb_pose_file_cmd)
     ld.add_action(declare_ground_truth_topic_cmd)
     ld.add_action(declare_uwb_noise_stddev_cmd)
+    ld.add_action(declare_uwb_enable_range_noise_cmd)
+    ld.add_action(declare_uwb_enable_zone_disturbance_cmd)
+    ld.add_action(declare_uwb_ideal_pose_mode_cmd)
     ld.add_action(declare_uwb_random_seed_cmd)
     ld.add_action(declare_uwb_publish_pose_topic_cmd)
+    ld.add_action(declare_uwb_adaptive_covariance_cmd)
+    ld.add_action(declare_uwb_position_covariance_xy_cmd)
+    ld.add_action(declare_uwb_consistency_min_score_cmd)
+    ld.add_action(declare_uwb_consistency_max_scale_cmd)
     # Add any conditioned actions
     ld.add_action(start_gazebo_server_cmd)
     ld.add_action(start_gazebo_client_cmd)

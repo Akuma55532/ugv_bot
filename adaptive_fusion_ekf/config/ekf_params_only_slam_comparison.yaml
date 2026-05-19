@@ -1,0 +1,50 @@
+ekf_fusion_node:
+  ros__parameters:
+    use_sim_time: true
+
+    mode: "only_slam"
+    world_frame: "map"
+    odom_frame: "odom"
+    base_frame: "base_footprint"
+
+    uwb_topic: "/uwb/pose"
+    slam_topic: "/slam/pose"
+    imu_topic: "/imu"
+    odom_topic: "/odom"
+
+    fusion_pose_topic: "/fusion/pose"
+    fusion_global_odom_topic: "/fusion/global_odom"
+    fusion_odom_topic: "/fusion/odom"
+    fusion_path_topic: "/fusion/path"
+    debug_topic: "/fusion/debug"
+
+    publish_global_pose: true
+    publish_global_odom: true
+    publish_local_odom: true
+    publish_map_odom_tf: true
+
+    path_publish_stride: 5
+    path_max_length: 500
+    use_measurement_covariance: true
+    use_uwb_measurement_covariance: false
+    use_slam_measurement_covariance: false
+    use_imu_measurement_covariance: true
+    min_measurement_variance: 0.0001
+    adaptive_window_size: 10
+
+    initial_covariance_x: 0.8
+    initial_covariance_y: 0.8
+    initial_covariance_theta: 0.3
+
+    process_noise_x: 0.03
+    process_noise_y: 0.03
+    process_noise_theta: 0.015
+
+    uwb_noise_x: 0.18
+    uwb_noise_y: 0.18
+
+    slam_noise_x: 0.02
+    slam_noise_y: 0.02
+    slam_noise_theta: 0.02
+
+    imu_noise_theta: 0.02

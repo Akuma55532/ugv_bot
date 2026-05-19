@@ -29,6 +29,10 @@ def generate_launch_description():
     slam_adaptive_covariance = LaunchConfiguration("slam_adaptive_covariance")
     slam_position_covariance_xy = LaunchConfiguration("slam_position_covariance_xy")
     slam_yaw_covariance = LaunchConfiguration("slam_yaw_covariance")
+    slam_inject_noise = LaunchConfiguration("slam_inject_noise")
+    slam_position_noise_stddev = LaunchConfiguration("slam_position_noise_stddev")
+    slam_yaw_noise_stddev = LaunchConfiguration("slam_yaw_noise_stddev")
+    slam_noise_seed = LaunchConfiguration("slam_noise_seed")
 
     cartographer_node = Node(
         package="cartographer_ros",
@@ -76,6 +80,10 @@ def generate_launch_description():
             {"adaptive_covariance": slam_adaptive_covariance},
             {"position_covariance_xy": slam_position_covariance_xy},
             {"yaw_covariance": slam_yaw_covariance},
+            {"inject_noise": slam_inject_noise},
+            {"position_noise_stddev": slam_position_noise_stddev},
+            {"yaw_noise_stddev": slam_yaw_noise_stddev},
+            {"noise_seed": slam_noise_seed},
         ],
     )
 
@@ -95,6 +103,10 @@ def generate_launch_description():
             DeclareLaunchArgument("slam_adaptive_covariance", default_value="true"),
             DeclareLaunchArgument("slam_position_covariance_xy", default_value="0.05"),
             DeclareLaunchArgument("slam_yaw_covariance", default_value="0.05"),
+            DeclareLaunchArgument("slam_inject_noise", default_value="true"),
+            DeclareLaunchArgument("slam_position_noise_stddev", default_value="0.2"),
+            DeclareLaunchArgument("slam_yaw_noise_stddev", default_value="0.2"),
+            DeclareLaunchArgument("slam_noise_seed", default_value="7"),
             DeclareLaunchArgument(
                 "configuration_directory",
                 default_value=os.path.join(pkg_share, "config"),
