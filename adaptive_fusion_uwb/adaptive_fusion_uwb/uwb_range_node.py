@@ -33,6 +33,9 @@ class UwbRangeNode(Node):
         self.declare_parameter("ground_truth_topic", "/ground_truth/odom")
         self.declare_parameter("uwb_pose_file", default_pose_file)
         self.declare_parameter("noise_stddev", 0.1)
+        self.declare_parameter("enable_range_noise", True)
+        self.declare_parameter("enable_zone_disturbance", True)
+        self.declare_parameter("ideal_pose_mode", False)
         self.declare_parameter("use_3d_distance", True)
         self.declare_parameter("min_range", 0.0)
         self.declare_parameter("random_seed", -1)
@@ -70,6 +73,17 @@ class UwbRangeNode(Node):
 
         self.noise_stddev = (
             self.get_parameter("noise_stddev").get_parameter_value().double_value
+        )
+        self.enable_range_noise = (
+            self.get_parameter("enable_range_noise").get_parameter_value().bool_value
+        )
+        self.enable_zone_disturbance = (
+            self.get_parameter("enable_zone_disturbance")
+            .get_parameter_value()
+            .bool_value
+        )
+        self.ideal_pose_mode = (
+            self.get_parameter("ideal_pose_mode").get_parameter_value().bool_value
         )
         self.use_3d_distance = (
             self.get_parameter("use_3d_distance").get_parameter_value().bool_value
@@ -193,6 +207,9 @@ class UwbRangeNode(Node):
             f"ground_truth_topic={self.ground_truth_topic}, "
             f"uwb_pose_file={self.uwb_pose_file}, "
             f"noise_stddev={self.noise_stddev:.3f} m, "
+            f"enable_range_noise={self.enable_range_noise}, "
+            f"enable_zone_disturbance={self.enable_zone_disturbance}, "
+            f"ideal_pose_mode={self.ideal_pose_mode}, "
             f"use_3d_distance={self.use_3d_distance}, "
             f"publish_pose={self.publish_pose}, "
             f"adaptive_covariance={self.adaptive_covariance}, "
@@ -218,6 +235,9 @@ class UwbRangeNode(Node):
         self.get_logger().info(
             "[UWB Noise] "
             f"base_noise_stddev={self.noise_stddev:.3f} m, "
+            f"enable_range_noise={self.enable_range_noise}, "
+            f"enable_zone_disturbance={self.enable_zone_disturbance}, "
+            f"ideal_pose_mode={self.ideal_pose_mode}, "
             f"min_range={self.min_range:.3f} m, "
             f"random_seed={self.get_parameter('random_seed').value}"
         )
@@ -285,8 +305,18 @@ class UwbRangeNode(Node):
         self.latest_noisy_ranges = noisy_ranges
         self.latest_anchor_status = anchor_status
 
-        # Solve the robot position by trilateration using the current range set.
-        estimated_pose = self.solve_position_from_ranges(noisy_ranges)
+        if self.ideal_pose_mode:
+            estimated_pose = {
+                "x": robot_x,
+                "y": robot_y,
+                "z": self.default_pose_z,
+                "anchor_count": float(len(self.anchor_names)),
+                "reference_anchor": "ideal",
+                "range_rmse": 0.0,
+            }
+        else:
+            # Solve the robot position by trilateration using the current range set.
+            estimated_pose = self.solve_position_from_ranges(noisy_ranges)
         self.latest_estimated_pose = estimated_pose
         self.latest_measurement_ready = True
 
@@ -474,23 +504,24 @@ class UwbRangeNode(Node):
         extra_noise_stddev = 0.0
         dropout_prob = 0.0
 
-        for zone in self.zone_disturbances:
-            if not zone["enabled"]:
-                continue
-            if zone["affected_anchors"] and anchor_name not in zone["affected_anchors"]:
-                continue
-            if not (
-                zone["min_x"] <= robot_x <= zone["max_x"]
-                and zone["min_y"] <= robot_y <= zone["max_y"]
-            ):
-                continue
+        if self.enable_zone_disturbance:
+            for zone in self.zone_disturbances:
+                if not zone["enabled"]:
+                    continue
+                if zone["affected_anchors"] and anchor_name not in zone["affected_anchors"]:
+                    continue
+                if not (
+                    zone["min_x"] <= robot_x <= zone["max_x"]
+                    and zone["min_y"] <= robot_y <= zone["max_y"]
+                ):
+                    continue
 
-            active_zone_names.append(zone["name"])
-            total_bias += zone["bias_mean"] + self.random_generator.gauss(
-                0.0, zone["bias_stddev"]
-            )
-            extra_noise_stddev += zone["extra_noise_stddev"]
-            dropout_prob = max(dropout_prob, zone["dropout_prob"])
+                active_zone_names.append(zone["name"])
+                total_bias += zone["bias_mean"] + self.random_generator.gauss(
+                    0.0, zone["bias_stddev"]
+                )
+                extra_noise_stddev += zone["extra_noise_stddev"]
+                dropout_prob = max(dropout_prob, zone["dropout_prob"])
 
         if dropout_prob > 0.0 and self.random_generator.random() < dropout_prob:
             return None, {
@@ -499,10 +530,10 @@ class UwbRangeNode(Node):
                 "active_zones": active_zone_names,
                 "dropout": True,
                 "bias": total_bias,
-                "noise_stddev": self.noise_stddev + extra_noise_stddev,
+                "noise_stddev": self._active_base_noise_stddev() + extra_noise_stddev,
             }
 
-        total_noise_stddev = self.noise_stddev + extra_noise_stddev
+        total_noise_stddev = self._active_base_noise_stddev() + extra_noise_stddev
         noisy_range = max(
             self.min_range,
             truth_range
@@ -518,6 +549,11 @@ class UwbRangeNode(Node):
             "noise_stddev": total_noise_stddev,
             "measured_range": noisy_range,
         }
+
+    def _active_base_noise_stddev(self) -> float:
+        if self.ideal_pose_mode or not self.enable_range_noise:
+            return 0.0
+        return self.noise_stddev
 
     def _evaluate_pose_quality(
         self,

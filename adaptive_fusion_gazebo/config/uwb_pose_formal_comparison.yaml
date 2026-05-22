@@ -30,7 +30,7 @@ uwb_anchors:
 
 disturbance_zones:
   - name: uwb_corridor_nlos
-    enabled: false
+    enabled: true
     min_x: 0.2
     max_x: 2.3
     min_y: -0.9
@@ -44,7 +44,7 @@ disturbance_zones:
     dropout_prob: 0.05
 
   - name: uwb_corner_shadow
-    enabled: false
+    enabled: true
     min_x: -1.7
     max_x: -0.4
     min_y: 0.7

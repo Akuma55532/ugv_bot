@@ -21,6 +21,7 @@ def generate_launch_description():
     use_static_map = LaunchConfiguration("use_static_map")
     uwb_random_seed = LaunchConfiguration("uwb_random_seed")
     use_clean_uwb = LaunchConfiguration("use_clean_uwb")
+    uwb_noise_stddev = LaunchConfiguration("uwb_noise_stddev")
     enable_slam_disturbance = LaunchConfiguration("enable_slam_disturbance")
     slam_disturbance_position_stddev = LaunchConfiguration(
         "slam_disturbance_position_stddev"
@@ -31,6 +32,9 @@ def generate_launch_description():
     slam_disturbance_seed = LaunchConfiguration("slam_disturbance_seed")
     start_eval = LaunchConfiguration("start_eval")
     eval_output_dir = LaunchConfiguration("eval_output_dir")
+    eval_alignment_mode = LaunchConfiguration("eval_alignment_mode")
+    eval_start_delay_sec = LaunchConfiguration("eval_start_delay_sec")
+    eval_duration_sec = LaunchConfiguration("eval_duration_sec")
     fixed_ekf_params_file = LaunchConfiguration("fixed_ekf_params_file")
     uwb_adaptive_ekf_params_file = LaunchConfiguration(
         "uwb_adaptive_ekf_params_file"
@@ -103,7 +107,7 @@ def generate_launch_description():
             "use_static_map": use_static_map,
             "uwb_random_seed": uwb_random_seed,
             "uwb_pose_file": uwb_pose_file,
-            "uwb_noise_stddev": "0.00",
+            "uwb_noise_stddev": uwb_noise_stddev,
             "uwb_enable_range_noise": uwb_enable_range_noise,
             "uwb_enable_zone_disturbance": uwb_enable_zone_disturbance,
             "uwb_ideal_pose_mode": uwb_ideal_pose_mode,
@@ -130,6 +134,9 @@ def generate_launch_description():
         launch_arguments={
             "method_name": fusion_method,
             "output_dir": eval_output_dir,
+            "alignment_mode": eval_alignment_mode,
+            "eval_start_delay_sec": eval_start_delay_sec,
+            "eval_duration_sec": eval_duration_sec,
         }.items(),
     )
 
@@ -141,12 +148,13 @@ def generate_launch_description():
             DeclareLaunchArgument("use_static_map", default_value="true"),
             DeclareLaunchArgument("uwb_random_seed", default_value="7"),
             DeclareLaunchArgument("use_clean_uwb", default_value="true"),
+            DeclareLaunchArgument("uwb_noise_stddev", default_value="0.06"),
             DeclareLaunchArgument("enable_slam_disturbance", default_value="true"),
             DeclareLaunchArgument(
                 "slam_disturbance_position_stddev", default_value="0.03"
             ),
             DeclareLaunchArgument(
-                "slam_disturbance_yaw_stddev", default_value="0.03"
+                "slam_disturbance_yaw_stddev", default_value="0.06"
             ),
             DeclareLaunchArgument("slam_disturbance_seed", default_value="11"),
             DeclareLaunchArgument("start_eval", default_value="true"),
@@ -154,6 +162,9 @@ def generate_launch_description():
                 "eval_output_dir",
                 default_value=os.path.join("/tmp", "adaptive_fusion_eval"),
             ),
+            DeclareLaunchArgument("eval_alignment_mode", default_value="initial_pose"),
+            DeclareLaunchArgument("eval_start_delay_sec", default_value="3.0"),
+            DeclareLaunchArgument("eval_duration_sec", default_value="0.0"),
             DeclareLaunchArgument(
                 "fixed_ekf_params_file",
                 default_value=os.path.join(

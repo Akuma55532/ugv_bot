@@ -12,6 +12,9 @@ def generate_launch_description():
     ground_truth_topic = LaunchConfiguration("ground_truth_topic")
     fusion_pose_topic = LaunchConfiguration("fusion_pose_topic")
     debug_topic = LaunchConfiguration("debug_topic")
+    alignment_mode = LaunchConfiguration("alignment_mode")
+    eval_start_delay_sec = LaunchConfiguration("eval_start_delay_sec")
+    eval_duration_sec = LaunchConfiguration("eval_duration_sec")
 
     eval_node = Node(
         package="adaptive_fusion_eval",
@@ -25,6 +28,9 @@ def generate_launch_description():
                 "ground_truth_topic": ground_truth_topic,
                 "fusion_pose_topic": fusion_pose_topic,
                 "debug_topic": debug_topic,
+                "alignment_mode": alignment_mode,
+                "eval_start_delay_sec": eval_start_delay_sec,
+                "eval_duration_sec": eval_duration_sec,
             }
         ],
     )
@@ -47,6 +53,18 @@ def generate_launch_description():
             DeclareLaunchArgument(
                 "debug_topic",
                 default_value="/fusion/debug",
+            ),
+            DeclareLaunchArgument(
+                "alignment_mode",
+                default_value="initial_pose",
+            ),
+            DeclareLaunchArgument(
+                "eval_start_delay_sec",
+                default_value="0.0",
+            ),
+            DeclareLaunchArgument(
+                "eval_duration_sec",
+                default_value="0.0",
             ),
             eval_node,
         ]
